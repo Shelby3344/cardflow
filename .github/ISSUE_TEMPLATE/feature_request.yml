@@ -1,0 +1,107 @@
+name: ✨ Feature Request
+description: Sugira uma nova funcionalidade ou melhoria
+title: "[FEATURE] "
+labels: ["enhancement", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por sugerir uma nova feature! Vamos entender sua ideia.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 🤔 Problema/Necessidade
+      description: Qual problema esta feature resolve?
+      placeholder: Descreva o problema ou necessidade que motivou esta sugestão
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 💡 Solução Proposta
+      description: Como você imagina esta feature funcionando?
+      placeholder: Descreva detalhadamente a solução proposta
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 🔄 Alternativas Consideradas
+      description: Outras soluções que você considerou?
+      placeholder: Liste alternativas que você já pensou
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: 🎯 Componente
+      description: Onde esta feature se encaixa?
+      options:
+        - Backend (Laravel/API)
+        - Frontend (Next.js/React)
+        - Database (PostgreSQL)
+        - Docker/Infraestrutura
+        - Voice IA Service
+        - Documentação
+        - Outro
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 🚀 Prioridade
+      description: Quão importante é esta feature?
+      options:
+        - 🔴 Alta - Essencial para o produto
+        - 🟡 Média - Importante mas não urgente
+        - 🟢 Baixa - Nice to have
+    validations:
+      required: true
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: 🎨 Mockups/Wireframes
+      description: Se aplicável, adicione mockups ou wireframes
+      placeholder: Arraste e solte imagens aqui
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: ✅ Critérios de Aceitação
+      description: Como saberemos que esta feature está completa?
+      placeholder: |
+        - [ ] Critério 1
+        - [ ] Critério 2
+        - [ ] Critério 3
+
+  - type: textarea
+    id: technical
+    attributes:
+      label: 🔧 Considerações Técnicas
+      description: Aspectos técnicos relevantes (opcional)
+      placeholder: APIs necessárias, dependências, impactos, etc.
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: 📚 Exemplos/Referências
+      description: Links para implementações similares em outros produtos
+      placeholder: URLs de referência
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: ✅ Checklist
+      options:
+        - label: Busquei features similares antes de criar esta
+          required: true
+        - label: Esta feature está alinhada com o propósito do CardFlow
+          required: true
+        - label: Considerei o impacto em usuários existentes
+          required: false

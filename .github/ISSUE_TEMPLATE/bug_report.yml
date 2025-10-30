@@ -1,0 +1,128 @@
+name: 🐛 Bug Report
+description: Reporte um bug ou comportamento inesperado
+title: "[BUG] "
+labels: ["bug", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por reportar um bug! Por favor, preencha o máximo de informações possível.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 📝 Descrição do Bug
+      description: Descreva claramente o problema encontrado
+      placeholder: O que aconteceu?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 🔄 Passos para Reproduzir
+      description: Como podemos reproduzir o bug?
+      placeholder: |
+        1. Vá para '...'
+        2. Clique em '...'
+        3. Role até '...'
+        4. Veja o erro
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: ✅ Comportamento Esperado
+      description: O que deveria acontecer?
+      placeholder: Descreva o comportamento esperado
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: ❌ Comportamento Atual
+      description: O que está acontecendo?
+      placeholder: Descreva o comportamento atual (incorreto)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: 🎯 Componente Afetado
+      description: Onde o bug ocorre?
+      options:
+        - Backend (Laravel/API)
+        - Frontend (Next.js/React)
+        - Database (PostgreSQL)
+        - Docker/Infraestrutura
+        - Voice IA Service
+        - Outro
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 🚨 Severidade
+      description: Quão crítico é este bug?
+      options:
+        - 🔴 Crítico - Sistema não funciona
+        - 🟠 Alto - Funcionalidade principal quebrada
+        - 🟡 Médio - Funcionalidade secundária afetada
+        - 🟢 Baixo - Problema cosmético ou de UX
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 🖥️ Ambiente
+      description: Informações sobre o ambiente
+      placeholder: |
+        - OS: [e.g. Windows 11, Ubuntu 22.04, macOS 14]
+        - Browser: [e.g. Chrome 120, Firefox 121]
+        - Docker version: [e.g. 24.0.7]
+        - PHP version: [e.g. 8.2.14]
+        - Node version: [e.g. 20.10.0]
+      render: markdown
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 📋 Logs/Erros
+      description: Cole logs relevantes, stack traces, ou mensagens de erro
+      placeholder: Cole aqui (será formatado automaticamente)
+      render: shell
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 📸 Screenshots/Vídeos
+      description: Se aplicável, adicione screenshots ou vídeos
+      placeholder: Arraste e solte imagens aqui
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: ℹ️ Contexto Adicional
+      description: Qualquer outra informação relevante
+      placeholder: Contexto adicional, tentativas de solução, etc.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: ✅ Checklist
+      options:
+        - label: Busquei issues similares antes de criar esta
+          required: true
+        - label: Li a documentação relevante
+          required: false
+        - label: Tentei reproduzir em ambiente limpo
+          required: false

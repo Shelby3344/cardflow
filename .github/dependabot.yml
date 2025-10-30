@@ -1,0 +1,109 @@
+version: 2
+updates:
+  # Backend - Composer dependencies
+  - package-ecosystem: "composer"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "your-github-username"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "composer"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    versioning-strategy: increase
+    allow:
+      - dependency-type: "all"
+    ignore:
+      # Ignore major version updates for Laravel
+      - dependency-name: "laravel/framework"
+        update-types: ["version-update:semver-major"]
+
+  # Frontend - NPM dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "your-github-username"
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "npm"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    versioning-strategy: increase
+    allow:
+      - dependency-type: "all"
+    ignore:
+      # Ignore major version updates for Next.js and React
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+
+  # Voice IA Service - NPM dependencies
+  - package-ecosystem: "npm"
+    directory: "/voice-ia-service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "voice-service"
+      - "npm"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # Docker - Dockerfile updates
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "backend"
+    commit-message:
+      prefix: "chore(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "frontend"
+    commit-message:
+      prefix: "chore(docker)"
+
+  # GitHub Actions - Workflow dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"
