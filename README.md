@@ -1002,26 +1002,6 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 - **Backend**: Laravel 11 + PHP 8.2
 - **Frontend**: Next.js 15 + React 19
 - **IA de Voz**: Node.js + OpenAI + ElevenLabs
-
 ---
 
-## 📞 Suporte
-
-Para dúvidas ou problemas:
-
-- 📧 Email: suporte@cardflow.com
-- 🐛 Issues: [GitHub Issues](https://github.com/seu-usuario/cardflow/issues)
-- 📖 Docs: [Documentação Completa](https://docs.cardflow.com)
-
----
-
-## 🎉 Agradecimentos
-
-- OpenAI pela API de TTS
-- ElevenLabs pela qualidade de voz
-- Comunidade Laravel e Next.js
-- Todos os contribuidores do projeto
-
----
-
-**Desenvolvido com ❤️ usando Laravel, Next.js e IA**
+**Desenvolvido com ❤️ ZUCKSZINHODEV**
