@@ -1,4 +1,4 @@
-# 🎴 CardFlow
+#  CardFlow - Sistema inteligente para estudos
 
 **Sistema de Flashcards com IA para Aprendizado Inteligente**
 
