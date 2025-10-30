@@ -1,5 +1,5 @@
 # Dockerfile para Frontend Next.js
-FROM node:20-alpine AS base
+FROM node:25-alpine AS base
 
 # Instalar dependências apenas quando necessário
 FROM base AS deps
