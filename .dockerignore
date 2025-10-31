@@ -1,0 +1,80 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+LICENSE
+docs/
+
+# Docker
+docker-compose*.yml
+.dockerignore
+Dockerfile
+.docker/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+Jenkinsfile
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.*
+!.env.example
+.env.docker*
+
+# Dependencies (serão instaladas no build)
+node_modules/
+vendor/
+
+# Build artifacts
+dist/
+build/
+.next/
+out/
+
+# Testing
+coverage/
+.nyc_output/
+.phpunit.result.cache
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+*.cache
+
+# OS files
+Thumbs.db
+.DS_Store
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Scripts (não necessários no container)
+*.sh
+*.bat
+setup.*
+start-local.*
+deploy*.sh
+quick-setup*.sh

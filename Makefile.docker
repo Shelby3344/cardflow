@@ -1,0 +1,212 @@
+# ============================================
+# CardFlow - Makefile para Docker Compose
+# ============================================
+
+.PHONY: help build up down restart logs ps clean migrate seed cache test shell db-shell redis-shell health install
+
+# Variáveis
+COMPOSE = docker-compose
+BACKEND = backend
+FRONTEND = frontend
+VOICE = voice-ia
+
+# Cores para output
+BLUE = \033[0;34m
+GREEN = \033[0;32m
+YELLOW = \033[1;33m
+RED = \033[0;31m
+NC = \033[0m # No Color
+
+## help: Mostra esta mensagem de ajuda
+help:
+	@echo "$(BLUE)CardFlow - Comandos Docker$(NC)"
+	@echo ""
+	@echo "$(GREEN)Comandos disponíveis:$(NC)"
+	@echo "  $(YELLOW)make install$(NC)      - Instala e configura o projeto pela primeira vez"
+	@echo "  $(YELLOW)make build$(NC)        - Constrói todas as imagens Docker"
+	@echo "  $(YELLOW)make up$(NC)           - Inicia todos os serviços"
+	@echo "  $(YELLOW)make down$(NC)         - Para todos os serviços"
+	@echo "  $(YELLOW)make restart$(NC)      - Reinicia todos os serviços"
+	@echo "  $(YELLOW)make logs$(NC)         - Mostra logs de todos os serviços"
+	@echo "  $(YELLOW)make ps$(NC)           - Lista status dos containers"
+	@echo "  $(YELLOW)make clean$(NC)        - Remove containers, volumes e imagens"
+	@echo ""
+	@echo "$(GREEN)Backend (Laravel):$(NC)"
+	@echo "  $(YELLOW)make migrate$(NC)      - Executa migrações do banco"
+	@echo "  $(YELLOW)make seed$(NC)         - Executa seeders"
+	@echo "  $(YELLOW)make cache$(NC)        - Limpa e reconstrói cache"
+	@echo "  $(YELLOW)make test$(NC)         - Executa testes"
+	@echo "  $(YELLOW)make shell$(NC)        - Acessa shell do backend"
+	@echo ""
+	@echo "$(GREEN)Banco de Dados:$(NC)"
+	@echo "  $(YELLOW)make db-shell$(NC)     - Acessa PostgreSQL"
+	@echo "  $(YELLOW)make db-backup$(NC)    - Faz backup do banco"
+	@echo "  $(YELLOW)make db-restore$(NC)   - Restaura backup do banco"
+	@echo "  $(YELLOW)make redis-shell$(NC)  - Acessa Redis CLI"
+	@echo ""
+	@echo "$(GREEN)Monitoramento:$(NC)"
+	@echo "  $(YELLOW)make health$(NC)       - Verifica saúde dos serviços"
+	@echo "  $(YELLOW)make stats$(NC)        - Mostra uso de recursos"
+	@echo ""
+
+## install: Configuração inicial completa
+install:
+	@echo "$(BLUE)🚀 Instalando CardFlow...$(NC)"
+	@if [ ! -f .env.docker ]; then \
+		echo "$(YELLOW)📝 Copiando .env.docker.example para .env.docker$(NC)"; \
+		cp .env.docker.example .env.docker; \
+		echo "$(RED)⚠️  Configure o arquivo .env.docker antes de continuar!$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)🏗️  Construindo imagens...$(NC)"
+	@$(COMPOSE) build
+	@echo "$(BLUE)🚀 Iniciando serviços de infraestrutura...$(NC)"
+	@$(COMPOSE) up -d postgres redis
+	@echo "$(BLUE)⏳ Aguardando PostgreSQL e Redis...$(NC)"
+	@sleep 15
+	@echo "$(BLUE)📊 Executando migrações...$(NC)"
+	@$(COMPOSE) run --rm $(BACKEND) php artisan migrate --force
+	@echo "$(BLUE)🌱 Executando seeders...$(NC)"
+	@$(COMPOSE) run --rm $(BACKEND) php artisan db:seed --force || true
+	@echo "$(BLUE)🧹 Otimizando aplicação...$(NC)"
+	@$(COMPOSE) run --rm $(BACKEND) php artisan config:cache
+	@$(COMPOSE) run --rm $(BACKEND) php artisan route:cache
+	@$(COMPOSE) run --rm $(BACKEND) php artisan view:cache
+	@echo "$(BLUE)🚀 Iniciando todos os serviços...$(NC)"
+	@$(COMPOSE) up -d
+	@echo "$(GREEN)✅ CardFlow instalado com sucesso!$(NC)"
+	@echo ""
+	@$(MAKE) health
+
+## build: Constrói todas as imagens
+build:
+	@echo "$(BLUE)🏗️  Construindo imagens Docker...$(NC)"
+	@$(COMPOSE) build
+
+## up: Inicia todos os serviços
+up:
+	@echo "$(BLUE)🚀 Iniciando serviços...$(NC)"
+	@$(COMPOSE) up -d
+	@echo "$(GREEN)✅ Serviços iniciados!$(NC)"
+
+## down: Para todos os serviços
+down:
+	@echo "$(YELLOW)🛑 Parando serviços...$(NC)"
+	@$(COMPOSE) down
+	@echo "$(GREEN)✅ Serviços parados!$(NC)"
+
+## restart: Reinicia todos os serviços
+restart: down up
+
+## logs: Mostra logs de todos os serviços
+logs:
+	@$(COMPOSE) logs -f
+
+## logs-backend: Logs do backend
+logs-backend:
+	@$(COMPOSE) logs -f $(BACKEND)
+
+## logs-frontend: Logs do frontend
+logs-frontend:
+	@$(COMPOSE) logs -f $(FRONTEND)
+
+## ps: Lista status dos containers
+ps:
+	@$(COMPOSE) ps
+
+## clean: Remove tudo (CUIDADO!)
+clean:
+	@echo "$(RED)⚠️  Removendo containers, volumes e imagens...$(NC)"
+	@$(COMPOSE) down -v --rmi all
+	@echo "$(GREEN)✅ Limpeza concluída!$(NC)"
+
+## migrate: Executa migrações
+migrate:
+	@echo "$(BLUE)📊 Executando migrações...$(NC)"
+	@$(COMPOSE) exec $(BACKEND) php artisan migrate --force
+	@echo "$(GREEN)✅ Migrações executadas!$(NC)"
+
+## migrate-fresh: Reseta banco e executa migrações
+migrate-fresh:
+	@echo "$(RED)⚠️  Resetando banco de dados...$(NC)"
+	@$(COMPOSE) exec $(BACKEND) php artisan migrate:fresh --force
+	@echo "$(GREEN)✅ Banco resetado!$(NC)"
+
+## seed: Executa seeders
+seed:
+	@echo "$(BLUE)🌱 Executando seeders...$(NC)"
+	@$(COMPOSE) exec $(BACKEND) php artisan db:seed --force
+	@echo "$(GREEN)✅ Seeders executados!$(NC)"
+
+## cache: Limpa e reconstrói cache
+cache:
+	@echo "$(BLUE)🧹 Limpando cache...$(NC)"
+	@$(COMPOSE) exec $(BACKEND) php artisan cache:clear
+	@$(COMPOSE) exec $(BACKEND) php artisan config:clear
+	@$(COMPOSE) exec $(BACKEND) php artisan route:clear
+	@$(COMPOSE) exec $(BACKEND) php artisan view:clear
+	@echo "$(BLUE)🏗️  Reconstruindo cache...$(NC)"
+	@$(COMPOSE) exec $(BACKEND) php artisan config:cache
+	@$(COMPOSE) exec $(BACKEND) php artisan route:cache
+	@$(COMPOSE) exec $(BACKEND) php artisan view:cache
+	@echo "$(GREEN)✅ Cache atualizado!$(NC)"
+
+## test: Executa testes
+test:
+	@echo "$(BLUE)🧪 Executando testes...$(NC)"
+	@$(COMPOSE) exec $(BACKEND) php artisan test
+
+## shell: Acessa shell do backend
+shell:
+	@$(COMPOSE) exec $(BACKEND) sh
+
+## db-shell: Acessa PostgreSQL
+db-shell:
+	@$(COMPOSE) exec postgres psql -U cardflow -d cardflow
+
+## db-backup: Backup do banco
+db-backup:
+	@echo "$(BLUE)💾 Fazendo backup do banco...$(NC)"
+	@$(COMPOSE) exec postgres pg_dump -U cardflow cardflow > backup_$(shell date +%Y%m%d_%H%M%S).sql
+	@echo "$(GREEN)✅ Backup criado!$(NC)"
+
+## db-restore: Restaura backup (usar: make db-restore FILE=backup.sql)
+db-restore:
+	@if [ -z "$(FILE)" ]; then \
+		echo "$(RED)❌ Use: make db-restore FILE=backup.sql$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)📥 Restaurando backup...$(NC)"
+	@$(COMPOSE) exec -T postgres psql -U cardflow cardflow < $(FILE)
+	@echo "$(GREEN)✅ Backup restaurado!$(NC)"
+
+## redis-shell: Acessa Redis CLI
+redis-shell:
+	@$(COMPOSE) exec redis redis-cli
+
+## health: Verifica saúde dos serviços
+health:
+	@echo "$(BLUE)🏥 Verificando saúde dos serviços...$(NC)"
+	@echo ""
+	@$(COMPOSE) ps
+	@echo ""
+	@echo "$(GREEN)📍 URLs de acesso:$(NC)"
+	@echo "   🌐 Frontend:     http://localhost:3000"
+	@echo "   🔧 Backend API:  http://localhost/api"
+	@echo "   🎙️  Voice IA:    http://localhost/voice-api"
+	@echo "   📊 API Docs:     http://localhost/api/documentation"
+	@echo ""
+
+## stats: Mostra uso de recursos
+stats:
+	@docker stats --no-stream
+
+## update: Atualiza aplicação
+update:
+	@echo "$(BLUE)🔄 Atualizando aplicação...$(NC)"
+	@git pull
+	@$(COMPOSE) build
+	@$(COMPOSE) up -d
+	@$(COMPOSE) exec $(BACKEND) php artisan migrate --force
+	@$(MAKE) cache
+	@echo "$(GREEN)✅ Aplicação atualizada!$(NC)"
