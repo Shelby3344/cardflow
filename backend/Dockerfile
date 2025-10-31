@@ -42,7 +42,8 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www
 
 # Copy dependency files first (for better layer caching)
-COPY composer.json composer.lock ./
+COPY composer.json ./
+COPY composer.lock* ./
 
 # Install dependencies (only production dependencies)
 RUN composer install ${COMPOSER_FLAGS} --no-scripts --no-autoloader
