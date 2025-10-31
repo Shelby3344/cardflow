@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 #  CardFlow ZUCKSZINHO V1.0
+=======
+#  CardFlow
+>>>>>>> 8dc66cb5f35ec5846efcf7233a6ff8adc9c15f99
 
 **Sistema de Flashcards com IA para Aprendizado Inteligente**
 
@@ -966,16 +970,6 @@ docker-compose exec backend php artisan view:cache
 - **Heroku** - Backend Laravel
 
 ---
-
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas! Por favor, siga estes passos:
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/MinhaFeature`)
-3. Commit suas mudanças (`git commit -m 'Adiciona MinhaFeature'`)
-4. Push para a branch (`git push origin feature/MinhaFeature`)
-5. Abra um Pull Request
 
 ### Padrões de Commit
 
