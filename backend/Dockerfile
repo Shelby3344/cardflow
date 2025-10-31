@@ -70,11 +70,11 @@ ARG uid=82
 
 # Install only runtime dependencies (minimal)
 RUN apt-get update && apt-get install -y \
-    libpng16-16 \
-    libonig5 \
+    libpng-dev \
+    libonig-dev \
     libxml2 \
-    libpq5 \
-    libzip4 \
+    libpq-dev \
+    libzip-dev \
     curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
