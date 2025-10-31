@@ -51,6 +51,9 @@ RUN composer install ${COMPOSER_FLAGS} --no-scripts --no-autoloader
 # Copy application code
 COPY . .
 
+# Copy .env.example to .env if .env doesn't exist
+RUN if [ ! -f .env ]; then cp .env.example .env; fi
+
 # Generate optimized autoloader
 RUN composer dump-autoload --optimize --classmap-authoritative --no-dev
 
