@@ -144,10 +144,11 @@ build/
 *.tsbuildinfo
 
 # ===== Package Manager =====
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-composer.lock
+# Manter lock files para builds reproduzíveis
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+# composer.lock
 
 # ===== Misc =====
 .turbo
