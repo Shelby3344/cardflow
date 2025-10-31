@@ -79,9 +79,12 @@ if [ -d "$PROJECT_DIR" ]; then
 else
     print_info "Clonando repositório..."
     git clone "$REPO_URL" "$PROJECT_DIR"
-    cd "$PROJECT_DIR"
     print_success "Repositório clonado"
 fi
+
+# Entrar no diretório do projeto
+cd "$PROJECT_DIR"
+print_info "Diretório atual: $(pwd)"
 
 # 6. Configurar arquivo .env
 if [ ! -f ".env" ]; then
@@ -100,7 +103,8 @@ fi
 
 # 7. Parar containers existentes
 print_info "Parando containers existentes..."
-docker-compose down || true
+cd "$PROJECT_DIR"
+docker-compose down 2>/dev/null || true
 print_success "Containers parados"
 
 # 8. Remover volumes antigos (opcional - comentado por segurança)
@@ -110,6 +114,7 @@ print_success "Containers parados"
 
 # 9. Construir e iniciar containers
 print_info "Construindo e iniciando containers..."
+cd "$PROJECT_DIR"
 docker-compose up -d --build
 print_success "Containers iniciados"
 
@@ -119,26 +124,31 @@ sleep 30
 
 # 11. Gerar APP_KEY do Laravel
 print_info "Gerando APP_KEY do Laravel..."
+cd "$PROJECT_DIR"
 docker-compose exec -T backend php artisan key:generate --force
 print_success "APP_KEY gerada"
 
 # 12. Gerar JWT Secret
 print_info "Gerando JWT Secret..."
+cd "$PROJECT_DIR"
 docker-compose exec -T backend php artisan jwt:secret --force
 print_success "JWT Secret gerada"
 
 # 13. Executar migrations
 print_info "Executando migrations do banco de dados..."
+cd "$PROJECT_DIR"
 docker-compose exec -T backend php artisan migrate --force
 print_success "Migrations executadas"
 
 # 14. Executar seeders (opcional)
 print_info "Executando seeders..."
+cd "$PROJECT_DIR"
 docker-compose exec -T backend php artisan db:seed --force || true
 print_success "Seeders executados"
 
 # 15. Limpar cache
 print_info "Limpando cache..."
+cd "$PROJECT_DIR"
 docker-compose exec -T backend php artisan config:clear
 docker-compose exec -T backend php artisan cache:clear
 docker-compose exec -T backend php artisan route:clear
@@ -147,6 +157,7 @@ print_success "Cache limpo"
 
 # 16. Otimizar para produção
 print_info "Otimizando para produção..."
+cd "$PROJECT_DIR"
 docker-compose exec -T backend php artisan config:cache
 docker-compose exec -T backend php artisan route:cache
 docker-compose exec -T backend php artisan view:cache
@@ -154,6 +165,7 @@ print_success "Otimizações aplicadas"
 
 # 17. Verificar status dos containers
 print_info "Verificando status dos containers..."
+cd "$PROJECT_DIR"
 docker-compose ps
 
 # 18. Configurar firewall
