@@ -52,7 +52,7 @@ RUN composer install ${COMPOSER_FLAGS} --no-scripts --no-autoloader
 COPY . .
 
 # Generate optimized autoloader
-RUN composer dump-autoload ${COMPOSER_FLAGS}
+RUN composer dump-autoload --optimize --classmap-authoritative --no-dev
 
 # ============================================
 # Multi-stage Build - Stage 2: Production Runtime
