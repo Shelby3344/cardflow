@@ -1,7 +1,7 @@
 # ============================================
 # Multi-stage Build - Stage 1: Builder
 # ============================================
-FROM php:8.2-fpm AS builder
+FROM php:8.4-fpm AS builder
 
 # Build arguments
 ARG COMPOSER_FLAGS="--no-interaction --optimize-autoloader --no-dev --prefer-dist"
@@ -60,7 +60,7 @@ RUN composer dump-autoload --optimize --classmap-authoritative --no-dev
 # ============================================
 # Multi-stage Build - Stage 2: Production Runtime
 # ============================================
-FROM php:8.2-fpm
+FROM php:8.4-fpm
 
 # Labels for metadata
 LABEL maintainer="CardFlow Team"
