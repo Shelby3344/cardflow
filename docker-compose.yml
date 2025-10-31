@@ -136,6 +136,7 @@ services:
       CACHE_STORE: redis
       QUEUE_CONNECTION: redis
     volumes:
+      - ./backend/.env:/var/www/.env:ro
       - ./backend/storage:/var/www/storage
     depends_on:
       - backend
