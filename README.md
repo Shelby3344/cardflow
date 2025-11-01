@@ -994,15 +994,7 @@ Este projeto está sob a licença **MIT**. Veja o arquivo [LICENSE](LICENSE) par
 
 ## 👥 Autores
 
-- **Shelby3344** - *Desenvolvedor Principal* - [GitHub](https://github.com/Shelby3344)
-
----
-
-## 📞 Suporte
-
-- **Issues**: [GitHub Issues](https://github.com/Shelby3344/cardflow/issues)
-- **Email**: suporte@cardflow.com
-- **Documentação**: [Wiki](https://github.com/Shelby3344/cardflow/wiki)
+- **Zuckszinho** - *Desenvolvedor Principal*
 
 ---
 
@@ -1027,16 +1019,10 @@ Este projeto está sob a licença **MIT**. Veja o arquivo [LICENSE](LICENSE) par
 
 ---
 
-## 🙏 Agradecimentos
-
-- [Laravel](https://laravel.com) - Framework PHP
-- [Next.js](https://nextjs.org) - Framework React
-- [OpenAI](https://openai.com) - API de Text-to-Speech
-- [Tailwind CSS](https://tailwindcss.com) - Framework CSS
-- [Docker](https://docker.com) - Containerização
-
----
-
 **Desenvolvido com ❤️ para revolucionar seus estudos!**
 
 🧠 **CardFlow** - Aprenda mais, lembre melhor.
+
+---
+
+**Status**: EM DESENVOLVIMENTO - por ZUCKSZINHO
