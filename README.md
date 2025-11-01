@@ -559,7 +559,34 @@ curl -X POST http://localhost:3001/api/tts/generate \
 
 ## 🚀 Deploy
 
-### Deploy Automático na AWS EC2
+### 🎯 Deploy Rápido (Recomendado)
+
+**No Windows, execute:**
+```powershell
+.\deploy-simples.ps1
+```
+
+O script vai guiá-lo pelo processo completo de deploy automaticamente!
+
+### 📚 Documentação Completa de Deploy
+
+- 📖 **[COMO_FAZER_DEPLOY.md](COMO_FAZER_DEPLOY.md)** - Comece aqui! Instruções simples e diretas
+- 📚 **[GUIA_DEPLOY.md](GUIA_DEPLOY.md)** - Guia completo e detalhado
+- ⚡ **[COMANDOS_DEPLOY.md](COMANDOS_DEPLOY.md)** - Referência rápida de comandos
+- ✅ **[CHECKLIST_DEPLOY.md](CHECKLIST_DEPLOY.md)** - Checklist de verificação
+
+### 📜 Scripts Disponíveis
+
+**Windows (PowerShell):**
+- `deploy-simples.ps1` - Deploy assistido (mais fácil)
+- `deploy.ps1` - Deploy com parâmetros personalizados
+
+**Servidor EC2:**
+- `deploy-ec2.sh` - Deploy completo no servidor
+- `quick-deploy.sh` - Deploy rápido (apenas atualizar código)
+- `fix-nextauth.sh` - Corrigir erro 500 do NextAuth
+
+### 🚀 Deploy Automático na AWS EC2
 
 ```bash
 # 1. Conecte-se ao servidor EC2
@@ -601,7 +628,11 @@ REDIS_PORT=6379
 FRONTEND_URL=https://seu-dominio.com
 SANCTUM_STATEFUL_DOMAINS=seu-dominio.com
 
-# AWS S3
+# NextAuth
+NEXTAUTH_URL=https://seu-dominio.com
+NEXTAUTH_SECRET=segredo_gerado_aleatoriamente
+
+# AWS S3 (opcional)
 AWS_ACCESS_KEY_ID=sua-key
 AWS_SECRET_ACCESS_KEY=seu-secret
 AWS_DEFAULT_REGION=us-east-1
