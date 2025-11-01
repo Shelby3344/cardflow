@@ -3,6 +3,17 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+// Health check (público)
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'service' => 'CardFlow API',
+        'timestamp' => now()->toISOString(),
+        'database' => \DB::connection()->getPdo() ? 'connected' : 'disconnected',
+        'redis' => \Redis::connection()->ping() ? 'connected' : 'disconnected',
+    ]);
+});
+
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
