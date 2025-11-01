@@ -99,6 +99,13 @@ Write-Host "==========================================" -ForegroundColor Gray
 Write-Host ""
 
 ssh -i $KeyPath "${User}@${ServerIP}" @"
+# Verificar se o diretório existe
+if [ ! -d "$ProjectPath" ]; then
+    echo "📥 Repositório não encontrado. Clonando..."
+    cd /home/ubuntu
+    git clone https://github.com/Shelby3344/cardflow.git
+fi
+
 cd $ProjectPath
 chmod +x $ScriptToRun
 ./$ScriptToRun

@@ -11,8 +11,31 @@ echo "🚀 Iniciando Deploy CardFlow"
 echo "=========================================="
 echo ""
 
-# Navegar para o diretório do projeto
-cd /home/ubuntu/cardflow
+# Detectar se estamos no diretório correto
+if [ ! -d ".git" ]; then
+    echo "⚠️  Não estamos em um repositório Git."
+    echo "📁 Tentando navegar para /home/ubuntu/cardflow..."
+    
+    if [ -d "/home/ubuntu/cardflow" ]; then
+        cd /home/ubuntu/cardflow
+        echo "✅ Diretório encontrado!"
+    else
+        echo "❌ Erro: Diretório /home/ubuntu/cardflow não encontrado!"
+        echo ""
+        echo "💡 Você precisa clonar o repositório primeiro:"
+        echo "   cd /home/ubuntu"
+        echo "   git clone https://github.com/Shelby3344/cardflow.git"
+        echo "   cd cardflow"
+        echo "   ./deploy-ec2.sh"
+        exit 1
+    fi
+else
+    echo "✅ Já estamos no diretório do projeto"
+fi
+
+# Confirmar diretório atual
+echo "📍 Diretório atual: $(pwd)"
+echo ""
 
 # ========================================
 # 1. Atualizar código do repositório
