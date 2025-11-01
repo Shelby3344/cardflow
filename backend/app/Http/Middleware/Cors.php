@@ -45,12 +45,19 @@ class Cors
             'http://localhost:3000',
             'http://localhost',
             'http://127.0.0.1:3000',
+            'http://18.217.114.196:3000',
+            'http://18.217.114.196',
         ];
 
         $origin = $request->headers->get('Origin');
 
         if (in_array($origin, $allowedOrigins)) {
             return $origin;
+        }
+
+        // Se não houver Origin, permitir qualquer (para testes com curl)
+        if (!$origin) {
+            return '*';
         }
 
         return $allowedOrigins[0];
