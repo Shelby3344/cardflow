@@ -1,4 +1,3 @@
-@ -1,1059 +0,0 @@
 # 🧠 CardFlow - Plataforma Inteligente de Flashcards
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
