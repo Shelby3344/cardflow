@@ -46,6 +46,7 @@ class DeckService {
       const response = await fetch(url, {
         method: 'GET',
         headers: await this.getHeaders(),
+        cache: 'no-store', // Força buscar dados frescos
       });
 
       if (!response.ok) {

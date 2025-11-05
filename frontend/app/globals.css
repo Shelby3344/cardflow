@@ -1,5 +1,21 @@
 @import "tailwindcss";
 
+/* Forçar tema escuro ANTES de qualquer carregamento */
+@layer base {
+  html,
+  body,
+  #__next,
+  #root {
+    background-color: #111827 !important;
+    color: #f9fafb !important;
+    color-scheme: dark !important;
+  }
+
+  html {
+    background-color: #111827 !important;
+  }
+}
+
 @layer base {
   :root {
     color-scheme: dark;
@@ -45,12 +61,29 @@
   
   html {
     color-scheme: dark;
+    background-color: #111827;
   }
   
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-family: var(--font-inter), system-ui, sans-serif;
+    min-height: 100vh;
+  }
+}
+
+/* 3D Perspective for Cards Animation */
+@layer utilities {
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  
+  .backface-hidden {
+    backface-visibility: hidden;
   }
 }
 

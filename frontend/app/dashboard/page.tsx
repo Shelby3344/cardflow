@@ -1,14 +1,15 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Play, MoreHorizontal, Check, Plus } from 'lucide-react';
+import { Play, MoreHorizontal, Check, Plus, Pencil, Trash2 } from 'lucide-react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import EditDeckModal from '../components/modals/EditDeckModal';
-import CreateSubDeckModal from '../components/modals/CreateSubDeckModal';
-import CreateCardModal from '../components/modals/CreateCardModal';
 import DeleteConfirmModal from '../components/modals/DeleteConfirmModal';
+import SimpleDeleteModal from '../components/modals/SimpleDeleteModal';
+import SimplePrompt from '../components/SimplePrompt';
+import RichTextEditor from '../components/RichTextEditor';
 import Toast, { ToastType } from '../components/Toast';
 import { deckService } from '@/services/deckService';
 import { cardService } from '@/services/cardService';
@@ -23,14 +24,21 @@ export default function DashboardPage() {
   const { user } = useAuthStore();
   
   const [selectedDeckId, setSelectedDeckId] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<'about' | 'decks' | 'learners'>('decks');
+  const [selectedDeckForCards, setSelectedDeckForCards] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<'about' | 'decks'>('decks');
+  const [isEditMode, setIsEditMode] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isSubDeckModalOpen, setIsSubDeckModalOpen] = useState(false);
-  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [subdecksRefreshKey, setSubdecksRefreshKey] = useState(0);
   const [deckStats, setDeckStats] = useState<DeckStats | null>(null);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [openCardMenuId, setOpenCardMenuId] = useState<number | null>(null);
+  const [selectedCardForEdit, setSelectedCardForEdit] = useState<any>(null);
+  const [selectedCardForDelete, setSelectedCardForDelete] = useState<any>(null);
+  const [showDeleteCardModal, setShowDeleteCardModal] = useState(false);
+  const [editingCards, setEditingCards] = useState<{[key: number]: {front: string, back: string}}>({});
   const [toast, setToast] = useState<{ message: string; type: ToastType; isVisible: boolean }>({
     message: '',
     type: 'success',
@@ -82,6 +90,47 @@ export default function DashboardPage() {
     staleTime: 1000 * 60 * 5,
   });
 
+  // Buscar cards do deck selecionado para edição
+  const { data: cardsForEditing = [], isLoading: cardsForEditingLoading } = useQuery({
+    queryKey: ['cards', selectedDeckForCards],
+    queryFn: async () => {
+      if (!selectedDeckForCards) return [];
+      const response = await cardService.getCardsByDeck(selectedDeckForCards);
+      return response.success && response.data ? response.data : [];
+    },
+    enabled: !!selectedDeckForCards,
+    staleTime: 1000 * 60 * 2,
+  });
+
+  // Buscar subdecks do deck selecionado (para exibir como "flashcards")
+  const { data: subdecks = [], isLoading: subdecksLoading } = useQuery({
+    queryKey: ['subdecks', selectedDeckId, subdecksRefreshKey],
+    queryFn: async () => {
+      if (!selectedDeckId) return [];
+      console.log('Fetching subdecks for deck:', selectedDeckId);
+      const response = await deckService.getDecks();
+      console.log('All decks response:', response);
+      if (response.success && response.data) {
+        console.log('All decks:', response.data);
+        // Filtrar apenas subdecks do deck selecionado
+        const filtered = response.data.filter((deck: any) => {
+          console.log(`Checking deck ${deck.id}: parent_id=${deck.parent_id} (type: ${typeof deck.parent_id}), selectedDeckId=${selectedDeckId} (type: ${typeof selectedDeckId}), match=${deck.parent_id == selectedDeckId}`);
+          // Usar == para comparação flexível (permite string vs number)
+          return deck.parent_id == selectedDeckId;
+        });
+        console.log('Filtered subdecks:', filtered);
+        return filtered;
+      }
+      return [];
+    },
+    enabled: !!selectedDeckId,
+    staleTime: 0, // Sem cache para debug
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+  });
+
+  console.log('Current subdecks:', subdecks);
+
   const loading = decksLoading || deckLoading || cardsLoading;
 
   // Fechar menu de opções ao clicar fora
@@ -99,8 +148,72 @@ export default function DashboardPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showOptionsMenu]);
 
+  // Fechar menu dropdown de cards ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (openCardMenuId !== null && !target.closest('.card-menu-dropdown')) {
+        setOpenCardMenuId(null);
+      }
+    };
+
+    if (openCardMenuId !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [openCardMenuId]);
+
   const handleCreateCard = async (cardData: any) => {
-    createCardMutation.mutate(cardData);
+    if (selectedCardForEdit) {
+      // Modo edição
+      await handleUpdateCard(cardData);
+    } else {
+      // Modo criação
+      createCardMutation.mutate(cardData);
+    }
+  };
+
+  const handleUpdateCard = async (cardData: any) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/cards/${selectedCardForEdit.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          front: cardData.front,
+          back: cardData.back,
+        }),
+      });
+
+      if (response.ok) {
+        setToast({
+          message: 'Card atualizado com sucesso!',
+          type: 'success',
+          isVisible: true,
+        });
+        
+        // Invalidar queries para atualizar a lista
+        queryClient.invalidateQueries({ queryKey: ['cards', selectedDeckId] });
+        queryClient.invalidateQueries({ queryKey: ['deck', selectedDeckId] });
+        
+        setSelectedCardForEdit(null);
+      } else {
+        setToast({
+          message: 'Erro ao atualizar card',
+          type: 'error',
+          isVisible: true,
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar card:', error);
+      setToast({
+        message: 'Erro ao atualizar card. Tente novamente.',
+        type: 'error',
+        isVisible: true,
+      });
+    }
   };
 
   // Mutation para criar card com otimistic updates
@@ -164,8 +277,6 @@ export default function DashboardPage() {
         queryClient.invalidateQueries({ queryKey: ['decks'] }); // Atualizar lista de decks
         // Atualizar menu lateral
         forceRefetch();
-        // Fechar modal
-        setIsCardModalOpen(false);
         // Mostrar toast de sucesso
         setToast({
           message: 'Flashcard criado com sucesso!',
@@ -283,8 +394,93 @@ export default function DashboardPage() {
     }
   };
 
+  const handleEditCard = (card: any) => {
+    setSelectedCardForEdit(card);
+    setIsEditMode(true);
+    setOpenCardMenuId(null);
+    // Scroll to the card in edit mode
+    setTimeout(() => {
+      const element = document.getElementById(`edit-card-${card.id}`);
+      element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  };
+
+  const handleEditDeckForCards = (deckId: number) => {
+    setSelectedDeckForCards(deckId);
+    setIsEditMode(true);
+  };
+
+  const handleCreateNewDeck = () => {
+    setShowPrompt(true);
+  };
+
+  const handlePromptConfirm = (name: string) => {
+    handleCreateSubDeck({ name, description: '' });
+  };
+
+  const handleDeleteCardClick = (card: any) => {
+    setSelectedCardForDelete(card);
+    setShowDeleteCardModal(true);
+    setOpenCardMenuId(null);
+  };
+
+  const handleConfirmDeleteCard = async () => {
+    if (!selectedCardForDelete) return;
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/cards/${selectedCardForDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (response.ok) {
+        setToast({
+          message: 'Card excluído com sucesso!',
+          type: 'success',
+          isVisible: true,
+        });
+        
+        // Invalidar queries para atualizar a lista
+        queryClient.invalidateQueries({ queryKey: ['cards', selectedDeckId] });
+        queryClient.invalidateQueries({ queryKey: ['deck', selectedDeckId] });
+      } else {
+        setToast({
+          message: 'Erro ao excluir card',
+          type: 'error',
+          isVisible: true,
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao excluir card:', error);
+      setToast({
+        message: 'Erro ao excluir card. Tente novamente.',
+        type: 'error',
+        isVisible: true,
+      });
+    } finally {
+      setShowDeleteCardModal(false);
+      setSelectedCardForDelete(null);
+    }
+  };
+
   const handleCreateSubDeck = async (subDeckData: any) => {
     try {
+      if (!selectedDeck) {
+        console.error('No deck selected!');
+        setToast({
+          message: 'Nenhum deck selecionado',
+          type: 'error',
+          isVisible: true,
+        });
+        return;
+      }
+
+      console.log('Selected deck:', selectedDeck);
+      console.log('Selected deck ID:', selectedDeck.id);
+      console.log('selectedDeckId state:', selectedDeckId);
+
       const apiData: any = {
         name: subDeckData.name,
         description: subDeckData.description || undefined,
@@ -292,19 +488,48 @@ export default function DashboardPage() {
         is_public: false,
       };
 
+      console.log('Creating subdeck with data:', apiData);
       const response = await deckService.createDeck(apiData);
+      console.log('Create subdeck response:', response);
+      
       if (response.success) {
-        alert('Sub-deck criado com sucesso!');
-        setIsSubDeckModalOpen(false);
-        // Recarregar dados do deck
-        queryClient.invalidateQueries({ queryKey: ['deck', selectedDeckId] });
-        queryClient.invalidateQueries({ queryKey: ['decks'] });
+        console.log('Subdeck created successfully!');
+        setToast({
+          message: 'Flashcard criado com sucesso!',
+          type: 'success',
+          isVisible: true,
+        });
+        
+        console.log('Clearing all query cache...');
+        // Limpar todo o cache de queries relacionadas
+        queryClient.removeQueries({ queryKey: ['subdecks'] });
+        queryClient.removeQueries({ queryKey: ['decks'] });
+        queryClient.removeQueries({ queryKey: ['deck'] });
+        
+        // Forçar atualização mudando a key
+        setSubdecksRefreshKey(prev => prev + 1);
+        
+        // Aguardar um pouco e refetch
+        setTimeout(async () => {
+          console.log('Refetching after timeout...');
+          await queryClient.refetchQueries({ queryKey: ['subdecks', selectedDeckId, subdecksRefreshKey + 1] });
+          await queryClient.refetchQueries({ queryKey: ['decks'] });
+          console.log('Refetch completed');
+        }, 300);
       } else {
-        alert('Erro ao criar sub-deck: ' + (response.errors ? JSON.stringify(response.errors) : 'Erro desconhecido'));
+        setToast({
+          message: 'Erro ao criar flashcard: ' + (response.errors ? JSON.stringify(response.errors) : 'Erro desconhecido'),
+          type: 'error',
+          isVisible: true,
+        });
       }
     } catch (error) {
       console.error('Erro ao criar sub-deck:', error);
-      alert('Erro ao criar sub-deck. Verifique o console.');
+      setToast({
+        message: 'Erro ao criar flashcard. Verifique o console.',
+        type: 'error',
+        isVisible: true,
+      });
     }
   };
 
@@ -465,13 +690,7 @@ export default function DashboardPage() {
                   ESTUDAR
                 </button>
               )}
-              <button
-                onClick={() => setIsCardModalOpen(true)}
-                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-full font-bold transition-all shadow-lg"
-              >
-                <Plus className="w-5 h-5" />
-                CRIAR CARD
-              </button>
+              
               <div className="relative options-menu-container">
                 <button 
                   onClick={() => setShowOptionsMenu(!showOptionsMenu)}
@@ -548,127 +767,254 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Cards do Deck */}
+      {/* Flashcards do Deck - Estilo Brainscape */}
       <div className="p-8 border-t border-gray-200">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Flashcards</h2>
-          <div className="text-sm text-gray-600">
-            {cards.length} {cards.length === 1 ? 'card' : 'cards'}
+          <h2 className="text-xl font-bold text-gray-900">
+            {isEditMode && selectedDeckForCards ? 
+              subdecks.find(d => d.id === selectedDeckForCards)?.title || 'Flashcards' 
+              : 'Flashcards'}
+          </h2>
+          <div className="flex items-center gap-3">
+            {isEditMode ? (
+              <button
+                onClick={() => {
+                  setIsEditMode(false);
+                  setSelectedDeckForCards(null);
+                  setEditingCards({});
+                }}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition-colors"
+              >
+                Voltar
+              </button>
+            ) : subdecks.length > 0 ? (
+              <button
+                onClick={handleCreateNewDeck}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                Criar Flashcard
+              </button>
+            ) : null}
           </div>
         </div>
 
-        {cards.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {cards.map((card: any) => {
-              // Calcular progresso de aprendizagem (simulado - pode ser substituído por dados reais do backend)
-              const studyCount = card.study_count || 0;
-              const maxStudies = 10; // número máximo de estudos para considerar 100%
-              const progress = Math.min((studyCount / maxStudies) * 100, 100);
-              
-              // Determinar cor baseada no progresso
-              let progressColor = 'bg-red-500';
-              if (progress >= 75) progressColor = 'bg-green-500';
-              else if (progress >= 50) progressColor = 'bg-yellow-500';
-              else if (progress >= 25) progressColor = 'bg-orange-500';
-              
-              return (
-                <div key={card.id} className="bg-white rounded-lg border-2 border-gray-200 p-5 hover:shadow-lg transition-all hover:border-blue-300">
-                  <div className="mb-3">
-                    <div className="text-xs font-semibold text-blue-600 mb-2">PERGUNTA</div>
-                    <div 
-                      className="prose prose-sm max-w-none text-gray-800"
-                      dangerouslySetInnerHTML={{ __html: card.front }}
+        {!isEditMode ? (
+          /* Lista de Sub-Decks (Flashcards) */
+          subdecks.length > 0 ? (
+            <div className="space-y-2">
+              {subdecks.map((deck: any) => {
+                const progress = deck.mastery_percentage || 0;
+                
+                return (
+                  <div
+                    key={deck.id}
+                    className="group relative bg-white border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200 cursor-pointer"
+                    onClick={() => handleEditDeckForCards(deck.id)}
+                  >
+                    <div className="flex items-center gap-4 py-4 px-5">
+                      {/* Porcentagem */}
+                      <div className="flex-shrink-0 w-12 text-center">
+                        <span className="text-base font-semibold text-gray-700">{progress}%</span>
+                      </div>
+
+                      {/* Conteúdo da Matéria - Centro */}
+                      <div className="flex-1 min-w-0">
+                        <div className="mb-2">
+                          <h3 className="text-base font-semibold text-gray-900 mb-1">
+                            {deck.title}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            {deck.card_count || 0} {deck.card_count === 1 ? 'carta' : 'cartas'}
+                          </p>
+                        </div>
+                        
+                        {/* Barra de Progresso Horizontal */}
+                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div
+                            className={`h-1.5 rounded-full transition-all duration-500 ${
+                              progress >= 75 ? 'bg-green-500' :
+                              progress >= 50 ? 'bg-yellow-500' :
+                              progress >= 25 ? 'bg-orange-500' :
+                              'bg-gray-300'
+                            }`}
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Botões de Ação - Direita */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {/* Menu de Opções */}
+                        <div className="relative card-menu-dropdown" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenCardMenuId(openCardMenuId === deck.id ? null : deck.id);
+                            }}
+                            className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+                            title="Mais opções"
+                          >
+                            <MoreHorizontal className="w-5 h-5" />
+                          </button>
+
+                          {/* Dropdown Menu */}
+                          {openCardMenuId === deck.id && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditDeckForCards(deck.id);
+                                  setOpenCardMenuId(null);
+                                }}
+                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 transition-colors"
+                              >
+                                <Pencil className="w-4 h-4" />
+                                Editar Cards
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedDeckId(deck.id);
+                                  setIsEditModalOpen(true);
+                                  setOpenCardMenuId(null);
+                                }}
+                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Excluir Deck
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Botão Play */}
+                        <Link
+                          href={`/dashboard/decks/${deck.id}/study`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-colors shadow-sm"
+                          title="Estudar"
+                        >
+                          <Play className="w-5 h-5 fill-current ml-0.5" />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <p className="text-gray-500 mb-4">Nenhuma sub-matéria criada ainda</p>
+              <button
+                onClick={handleCreateNewDeck}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-semibold transition-all"
+              >
+                <Plus className="w-5 h-5" />
+                Criar primeiro flashcard
+              </button>
+            </div>
+          )
+        ) : (
+          /* Edit Mode - Inline Editing like Brainscape */
+          <div className="space-y-4">
+            {/* Cards List in Edit Mode */}
+            {cardsForEditing.map((card: any, index: number) => (
+              <div
+                key={card.id}
+                id={`edit-card-${card.id}`}
+                className="bg-white border-2 border-gray-200 rounded-lg p-6"
+              >
+                <div className="flex items-start gap-6">
+                  {/* Card Number */}
+                  <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-semibold">
+                    {index + 1}
+                  </div>
+
+                  {/* Question (Left Side) */}
+                  <div className="flex-1">
+                    <label className="text-sm font-semibold text-gray-700 mb-3 block">
+                      Pergunta
+                    </label>
+                    <RichTextEditor
+                      content={editingCards[card.id]?.front ?? card.front ?? ''}
+                      onChange={(content) => setEditingCards({
+                        ...editingCards,
+                        [card.id]: {
+                          ...editingCards[card.id],
+                          front: content,
+                          back: editingCards[card.id]?.back ?? card.back ?? ''
+                        }
+                      })}
+                      placeholder="Digite a pergunta do flashcard..."
                     />
                   </div>
-                  
-                  {/* Barra de Progresso de Aprendizagem */}
-                  <div className="mt-4 mb-3">
-                    <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                      <span className="font-medium">Progresso de Aprendizagem</span>
-                      <span className="font-semibold">{Math.round(progress)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className={`${progressColor} h-2 rounded-full transition-all duration-300`}
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="pt-3 border-t border-gray-200 flex items-center justify-between text-xs text-gray-500">
-                    <span>Flashcard #{card.id}</span>
-                    {card.sub_deck_id && <span>📁 Subdeck</span>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-            <div className="text-4xl mb-4">📝</div>
-            <p className="text-gray-500 mb-4">Nenhum flashcard criado ainda</p>
-            <button
-              onClick={() => setIsCardModalOpen(true)}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-semibold transition-all"
-            >
-              <Plus className="w-5 h-5" />
-              Criar primeiro flashcard
-            </button>
-          </div>
-        )}
-      </div>
 
-      {/* Sub-Decks */}
-      <div className="p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Sub-Decks</h2>
-          <button
-            onClick={() => setIsSubDeckModalOpen(true)}
-            className="px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg font-semibold transition-all shadow-md hover:shadow-lg"
-          >
-            + Criar Sub-Deck
-          </button>
-        </div>
+                  {/* Answer (Right Side) */}
+                  <div className="flex-1">
+                    <label className="text-sm font-semibold text-gray-700 mb-3 block">
+                      Resposta
+                    </label>
+                    <RichTextEditor
+                      content={editingCards[card.id]?.back ?? card.back ?? ''}
+                      onChange={(content) => setEditingCards({
+                        ...editingCards,
+                        [card.id]: {
+                          front: editingCards[card.id]?.front ?? card.front ?? '',
+                          back: content
+                        }
+                      })}
+                      placeholder="Digite a resposta do flashcard..."
+                    />
+                  </div>
 
-        {selectedDeck.subDecks && selectedDeck.subDecks.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {selectedDeck.subDecks.map((subDeck: any) => (
-              <div key={subDeck.id} className="bg-white rounded-lg border-2 border-gray-200 p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900">{subDeck.name}</h3>
-                  {subDeck.completed && (
-                    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                      <Check className="w-4 h-4 text-white" />
-                    </div>
-                  )}
+                  {/* Actions */}
+                  <div className="flex-shrink-0 flex flex-col gap-2">
+                    <button
+                      onClick={async () => {
+                        const cardData = editingCards[card.id];
+                        if (cardData) {
+                          await handleUpdateCard({ front: cardData.front, back: cardData.back });
+                          const newEditingCards = { ...editingCards };
+                          delete newEditingCards[card.id];
+                          setEditingCards(newEditingCards);
+                        }
+                      }}
+                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                      title="Salvar"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCardClick(card)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Excluir"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="text-sm text-gray-600 mb-3">
-                  {subDeck.cardsStudied || 0} de {subDeck.totalCards || 0} cartas
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-                  <div
-                    className="bg-blue-500 h-2 rounded-full transition-all"
-                    style={{ width: `${subDeck.progress}%` }}
-                  />
-                </div>
-                <button
-                  onClick={() => setIsCardModalOpen(true)}
-                  className="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-semibold transition-all flex items-center justify-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Criar Card
-                </button>
               </div>
             ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-            <p className="text-gray-500 mb-4">Nenhum sub-deck criado ainda</p>
+
+            {/* Add New Card Button */}
             <button
-              onClick={() => setIsSubDeckModalOpen(true)}
-              className="text-blue-600 hover:text-blue-700 font-semibold"
+              onClick={async () => {
+                if (!selectedDeckForCards) return;
+                // Create a new empty card
+                const newCard = {
+                  deck_id: selectedDeckForCards,
+                  front: '',
+                  back: ''
+                };
+                await handleCreateCard(newCard);
+              }}
+              className="w-full py-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all flex items-center justify-center gap-2 font-medium"
             >
-              Criar primeiro sub-deck
+              <Plus className="w-5 h-5" />
+              Adicionar novo card
             </button>
           </div>
         )}
@@ -680,32 +1026,17 @@ export default function DashboardPage() {
         onClose={() => setIsEditModalOpen(false)}
         onSubmit={handleEditDeck}
         onDelete={handleDeleteDeck}
-        initialData={{
+        initialData={selectedDeck ? {
           name: selectedDeck.title,
           description: selectedDeck.description || '',
           icon: selectedDeck.icon || '',
           color: selectedDeck.color || '',
           imageUrl: selectedDeck.image_url || null,
           isPublic: selectedDeck.is_public || false,
-        }}
+        } : undefined}
       />
 
-      <CreateSubDeckModal
-        isOpen={isSubDeckModalOpen}
-        onClose={() => setIsSubDeckModalOpen(false)}
-        onSubmit={handleCreateSubDeck}
-        parentDeckName={selectedDeck.title}
-      />
-
-      <CreateCardModal
-        isOpen={isCardModalOpen}
-        onClose={() => setIsCardModalOpen(false)}
-        onSubmit={handleCreateCard}
-        deckName={selectedDeck.title}
-        isSubmitting={createCardMutation.isPending}
-      />
-
-      {/* Modal de Confirmação de Exclusão */}
+      {/* Modal de Confirmação de Exclusão do Deck */}
       <DeleteConfirmModal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
@@ -713,6 +1044,27 @@ export default function DashboardPage() {
         title="Excluir Deck"
         message="Tem certeza que deseja excluir este deck? Todos os cards e subdecks serão permanentemente removidos."
         itemName={selectedDeck?.title}
+      />
+
+      {/* Modal de Confirmação de Exclusão do Card - Simples */}
+      <SimpleDeleteModal
+        isOpen={showDeleteCardModal}
+        onClose={() => {
+          setShowDeleteCardModal(false);
+          setSelectedCardForDelete(null);
+        }}
+        onConfirm={handleConfirmDeleteCard}
+        itemName={selectedCardForDelete?.front?.replace(/<[^>]*>/g, '') || ''}
+      />
+
+      {/* Prompt Simples para Criar Flashcard */}
+      <SimplePrompt
+        isOpen={showPrompt}
+        title="Criar Flashcard"
+        placeholder="Nome do flashcard..."
+        description="Um Card é um subconjunto de flashcards em uma aula, semelhante aos capítulos de um livro."
+        onConfirm={handlePromptConfirm}
+        onClose={() => setShowPrompt(false)}
       />
 
       {/* Toast de Notificação */}

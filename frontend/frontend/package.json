@@ -1,6 +1,11 @@
 {
   "dependencies": {
     "@tanstack/query-sync-storage-persister": "^5.90.7",
-    "@tanstack/react-query-persist-client": "^5.90.7"
+    "@tanstack/react-query-persist-client": "^5.90.7",
+    "@tiptap/extension-color": "^3.10.2",
+    "@tiptap/extension-highlight": "^3.10.2",
+    "@tiptap/extension-link": "^3.10.2",
+    "@tiptap/extension-text-align": "^3.10.2",
+    "@tiptap/extension-text-style": "^3.10.2"
   }
 }

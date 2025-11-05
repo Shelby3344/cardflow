@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, BookOpen, Clock, TrendingUp } from 'lucide-react';
+import { Plus, BookOpen, Clock, TrendingUp, Play, MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/lib/api';
 
@@ -10,6 +10,8 @@ interface Deck {
   name: string;
   description: string;
   cards_count: number;
+  studied_cards?: number;
+  progress?: number;
   created_at: string;
 }
 
@@ -97,37 +99,107 @@ export default function DecksPage() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {decks.map((deck) => (
-            <Link
-              key={deck.id}
-              href={`/dashboard/decks/${deck.id}`}
-              className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all hover:scale-105"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <BookOpen className="h-8 w-8 text-violet-600" />
-                <span className="bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 px-3 py-1 rounded-full text-sm font-medium">
-                  {deck.cards_count || 0} cards
-                </span>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                {deck.name}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2">
-                {deck.description || 'Sem descrição'}
-              </p>
-              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                <div className="flex items-center space-x-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{new Date(deck.created_at).toLocaleDateString()}</span>
+        <div className="space-y-3">
+          {decks.map((deck) => {
+            const progress = deck.progress || 0;
+            const studiedCards = deck.studied_cards || 0;
+            
+            return (
+              <div
+                key={deck.id}
+                className="group relative bg-zinc-900/50 backdrop-blur-sm border border-zinc-800/50 rounded-2xl overflow-hidden hover:border-purple-500/30 transition-all duration-300"
+              >
+                <div className="flex items-center gap-4 p-5">
+                  {/* Progresso Circular - Esquerda */}
+                  <div className="relative flex-shrink-0">
+                    <svg className="w-16 h-16 transform -rotate-90">
+                      {/* Círculo de fundo */}
+                      <circle
+                        cx="32"
+                        cy="32"
+                        r="28"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                        className="text-zinc-800"
+                      />
+                      {/* Círculo de progresso */}
+                      <circle
+                        cx="32"
+                        cy="32"
+                        r="28"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                        strokeDasharray={`${2 * Math.PI * 28}`}
+                        strokeDashoffset={`${2 * Math.PI * 28 * (1 - progress / 100)}`}
+                        className={`transition-all duration-500 ${
+                          progress >= 75 ? 'text-green-500' :
+                          progress >= 50 ? 'text-yellow-500' :
+                          progress >= 25 ? 'text-orange-500' :
+                          'text-purple-500'
+                        }`}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    {/* Texto de porcentagem */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-sm font-bold text-white">{Math.round(progress)}%</span>
+                    </div>
+                  </div>
+
+                  {/* Informações do Deck - Centro */}
+                  <Link 
+                    href={`/dashboard/decks/${deck.id}`}
+                    className="flex-1 min-w-0"
+                  >
+                    <h3 className="text-lg font-semibold text-white mb-1 truncate group-hover:text-purple-400 transition-colors">
+                      {deck.name}
+                    </h3>
+                    <p className="text-sm text-zinc-400 truncate mb-2">
+                      {deck.description || 'Sem descrição'}
+                    </p>
+                    <div className="flex items-center gap-4 text-xs text-zinc-500">
+                      <span className="flex items-center gap-1">
+                        <BookOpen className="w-3.5 h-3.5" />
+                        {deck.cards_count} {deck.cards_count === 1 ? 'card' : 'cards'}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        {studiedCards} estudados
+                      </span>
+                    </div>
+                  </Link>
+
+                  {/* Ações - Direita */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Botão Play */}
+                    <Link
+                      href={`/dashboard/decks/${deck.id}/study`}
+                      className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white shadow-lg shadow-purple-500/20 transition-all duration-300 hover:scale-105 group/play"
+                    >
+                      <Play className="w-5 h-5 ml-0.5 group-hover/play:scale-110 transition-transform" fill="currentColor" />
+                    </Link>
+
+                    {/* Menu de Opções */}
+                    <button
+                      className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-zinc-800/50 text-zinc-400 hover:text-white transition-all duration-200"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // TODO: Adicionar menu dropdown
+                        console.log('Menu do deck:', deck.id);
+                      }}
+                    >
+                      <MoreHorizontal className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <TrendingUp className="h-4 w-4" />
-                  <span>0% progresso</span>
-                </div>
+
+                {/* Borda inferior gradiente no hover */}
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
-            </Link>
-          ))}
+            );
+          })}
         </div>
       )}
 

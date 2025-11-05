@@ -2,9 +2,310 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Brain, Mic, Zap, BarChart3, Shield, Sparkles, ArrowRight, Star, TrendingUp, Users } from 'lucide-react';
+import { Brain, Mic, Zap, BarChart3, Shield, Sparkles, ArrowRight, Star, TrendingUp, Users, Volume2, BookOpen, Lightbulb, Award } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
+
+// Componente de Cards 3D Animados
+function AnimatedCardsStack() {
+  const [activeCard, setActiveCard] = useState(0);
+  
+  const cards = [
+    {
+      id: 1,
+      gradient: 'from-violet-500 via-purple-500 to-pink-500',
+      icon: <Brain className="w-12 h-12" />,
+      title: 'Neurociência',
+      question: 'Como funciona a memória de longo prazo?',
+      answer: 'A consolidação através da repetição espaçada',
+      category: 'Ciência',
+      stats: { mastery: 85, reviews: 12 }
+    },
+    {
+      id: 2,
+      gradient: 'from-blue-500 via-cyan-500 to-teal-500',
+      icon: <Lightbulb className="w-12 h-12" />,
+      question: 'E = mc²',
+      answer: 'Equação de Einstein relacionando energia e massa',
+      category: 'Física',
+      stats: { mastery: 92, reviews: 8 }
+    },
+    {
+      id: 3,
+      gradient: 'from-orange-500 via-red-500 to-pink-500',
+      icon: <BookOpen className="w-12 h-12" />,
+      question: 'O que é inteligência artificial?',
+      answer: 'Simulação de processos de inteligência humana por máquinas',
+      category: 'Tecnologia',
+      stats: { mastery: 78, reviews: 15 }
+    },
+    {
+      id: 4,
+      gradient: 'from-green-500 via-emerald-500 to-teal-500',
+      icon: <Award className="w-12 h-12" />,
+      question: 'Qual a capital da França?',
+      answer: 'Paris',
+      category: 'Geografia',
+      stats: { mastery: 95, reviews: 5 }
+    },
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveCard((prev) => (prev + 1) % cards.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="relative w-full h-full flex items-center justify-center perspective-1000">
+      {/* Glow Effect - Otimizado com animação de entrada */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ 
+          opacity: [0.2, 0.4, 0.2],
+          scale: [1, 1.1, 1]
+        }}
+        transition={{
+          opacity: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+          scale: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+          delay: 0.2
+        }}
+        className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-[3rem] blur-[80px] will-change-transform"
+      />
+
+      {/* Cards Stack */}
+      <motion.div 
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+        className="relative w-full max-w-md h-[500px]"
+      >
+        {cards.map((card, index) => {
+          const offset = index - activeCard;
+          const isActive = index === activeCard;
+          
+          return (
+            <motion.div
+              key={card.id}
+              initial={false}
+              animate={{
+                rotateY: offset * 15,
+                rotateX: offset * 5,
+                scale: 1 - Math.abs(offset) * 0.1,
+                z: -Math.abs(offset) * 100,
+                opacity: Math.abs(offset) > 2 ? 0 : 1 - Math.abs(offset) * 0.3,
+                x: offset * 30,
+                y: Math.abs(offset) * 20,
+              }}
+              transition={{
+                duration: 0.6,
+                ease: [0.32, 0.72, 0, 1],
+              }}
+              className="absolute inset-0 cursor-pointer will-change-transform"
+              style={{
+                transformStyle: 'preserve-3d',
+                zIndex: cards.length - Math.abs(offset),
+              }}
+              onClick={() => setActiveCard(index)}
+            >
+              {/* Card Container with Glass Effect */}
+              <div className="relative w-full h-full group">
+                {/* Glow on Hover - Simplificado */}
+                {isActive && (
+                  <motion.div
+                    animate={{
+                      opacity: [0.2, 0.4, 0.2],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                    }}
+                    className={`absolute inset-0 bg-gradient-to-r ${card.gradient} rounded-3xl blur-xl will-change-transform`}
+                  />
+                )}
+
+                {/* Main Card */}
+                <div className={`relative w-full h-full rounded-3xl bg-gradient-to-br ${card.gradient} p-1 shadow-2xl overflow-hidden`}>
+                  {/* Inner Card */}
+                  <div className="w-full h-full bg-gray-900/95 backdrop-blur-xl rounded-[1.4rem] p-8 flex flex-col justify-between">
+                    {/* Header */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="text-white">
+                          {card.icon}
+                        </div>
+                        <div>
+                          <div className="text-white/60 text-sm font-medium">{card.category}</div>
+                          <div className="text-white font-semibold">{card.title}</div>
+                        </div>
+                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                      >
+                        <Volume2 className="w-5 h-5 text-white" />
+                      </motion.button>
+                    </div>
+
+                    {/* Question */}
+                    <div className="flex-1 flex items-center justify-center py-8">
+                      <motion.div
+                        animate={{
+                          scale: isActive ? [1, 1.02, 1] : 1,
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                        }}
+                        className="text-center"
+                      >
+                        <div className="text-2xl font-bold text-white mb-4">
+                          {card.question}
+                        </div>
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{
+                            opacity: isActive ? [0, 1] : 0,
+                            height: isActive ? 'auto' : 0,
+                          }}
+                          transition={{
+                            delay: isActive ? 1 : 0,
+                            duration: 0.5,
+                          }}
+                          className="text-white/70 text-lg overflow-hidden"
+                        >
+                          {card.answer}
+                        </motion.div>
+                      </motion.div>
+                    </div>
+
+                    {/* Stats & Actions */}
+                    <div className="space-y-4">
+                      {/* Progress Bar */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-white/60">Domínio</span>
+                          <span className="text-white font-semibold">{card.stats.mastery}%</span>
+                        </div>
+                        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: isActive ? `${card.stats.mastery}%` : 0 }}
+                            transition={{ duration: 1, delay: 0.5 }}
+                            className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Difficulty Rating */}
+                      <div className="space-y-3">
+                        <div className="text-center">
+                          <div className="text-white/80 text-sm font-medium mb-2">
+                            Qual foi a dificuldade desta pergunta?
+                          </div>
+                        </div>
+                        <div className="flex justify-center gap-2">
+                          {[1, 2, 3, 4, 5].map((difficulty) => (
+                            <motion.button
+                              key={difficulty}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              className={`group relative w-14 h-14 rounded-xl transition-all flex items-center justify-center ${
+                                difficulty === 1
+                                  ? 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
+                                  : difficulty === 2
+                                  ? 'bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700'
+                                  : difficulty === 3
+                                  ? 'bg-gradient-to-br from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700'
+                                  : difficulty === 4
+                                  ? 'bg-gradient-to-br from-lime-500 to-lime-600 hover:from-lime-600 hover:to-lime-700'
+                                  : 'bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'
+                              } shadow-lg hover:shadow-xl`}
+                            >
+                              <span className="text-white font-bold text-2xl">{difficulty}</span>
+                              {/* Tooltip */}
+                              <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 px-3 py-1 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                                {difficulty === 1
+                                  ? 'Muito Difícil'
+                                  : difficulty === 2
+                                  ? 'Difícil'
+                                  : difficulty === 3
+                                  ? 'Moderado'
+                                  : difficulty === 4
+                                  ? 'Fácil'
+                                  : 'Muito Fácil'}
+                                {/* Seta do tooltip */}
+                                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900" />
+                              </div>
+                            </motion.button>
+                          ))}
+                        </div>
+                        <div className="flex justify-between text-xs text-white/50 px-1">
+                          <span>Muito Difícil</span>
+                          <span>Muito Fácil</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </motion.div>
+
+      {/* Card Indicators */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.6 }}
+        className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 flex gap-3"
+      >
+        {cards.map((_, index) => (
+          <motion.button
+            key={index}
+            onClick={() => setActiveCard(index)}
+            className={`h-2 rounded-full transition-all ${
+              index === activeCard ? 'w-8 bg-violet-500' : 'w-2 bg-white/30'
+            }`}
+            whileHover={{ scale: 1.2 }}
+            whileTap={{ scale: 0.9 }}
+          />
+        ))}
+      </motion.div>
+
+      {/* Navigation Arrows */}
+      <motion.button
+        initial={{ opacity: 0, x: -30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6, delay: 0.7 }}
+        whileHover={{ scale: 1.1, x: -5 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setActiveCard((prev) => (prev - 1 + cards.length) % cards.length)}
+        className="absolute left-0 top-1/2 -translate-y-1/2 p-4 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors"
+      >
+        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </motion.button>
+      <motion.button
+        initial={{ opacity: 0, x: 30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6, delay: 0.7 }}
+        whileHover={{ scale: 1.1, x: 5 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setActiveCard((prev) => (prev + 1) % cards.length)}
+        className="absolute right-0 top-1/2 -translate-y-1/2 p-4 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors"
+      >
+        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </motion.button>
+    </div>
+  );
+}
 
 // Componente de Rede Neural Animada
 function NeuralNetwork() {
@@ -179,7 +480,7 @@ export default function Home() {
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="fixed top-0 left-0 right-0 z-50 border-b border-gray-200/50 dark:border-gray-700/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md"
+        className="fixed top-0 left-0 right-0 z-50 border-b border-gray-700/50 bg-gray-900/80 backdrop-blur-md"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
@@ -199,7 +500,7 @@ export default function Home() {
             <div className="flex items-center space-x-4">
               <Link
                 href="/login"
-                className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                className="text-gray-300 hover:text-white transition-colors"
               >
                 Entrar
               </Link>
@@ -269,7 +570,7 @@ export default function Home() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.9 }}
-                  className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl"
+                  className="text-xl md:text-2xl text-gray-600 text-gray-300 mb-8 max-w-2xl"
                 >
                   CardFlow - Revolucione seus estudos com revisão espacial, áudio inteligente e estatísticas
                   avançadas. Aprenda mais rápido, retenha por mais tempo.
@@ -303,63 +604,10 @@ export default function Home() {
               </motion.div>
             </div>
 
-            {/* Hero Image/Animation */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1, delay: 0.5 }}
-              className="relative hidden lg:block"
-            >
-              <motion.div
-                animate={{
-                  y: [0, -20, 0],
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                className="relative"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-3xl blur-3xl opacity-30" />
-                <div className="relative bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 flex items-center justify-center">
-                        <Brain className="h-6 w-6 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">Card Inteligente</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Com IA de voz</p>
-                      </div>
-                    </div>
-                    <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-xl">
-                      <p className="text-gray-700 dark:text-gray-300">Quem formulou a Teoria da Relatividade?</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        className="flex-1 bg-green-500 text-white py-2 rounded-lg font-semibold"
-                      >
-                        Fácil
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        className="flex-1 bg-yellow-500 text-white py-2 rounded-lg font-semibold"
-                      >
-                        Normal
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        className="flex-1 bg-red-500 text-white py-2 rounded-lg font-semibold"
-                      >
-                        Difícil
-                      </motion.button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
+            {/* Animated 3D Cards Stack */}
+            <div className="relative hidden lg:block h-[600px]">
+              <AnimatedCardsStack />
+            </div>
           </div>
         </div>
       </section>
@@ -411,7 +659,7 @@ export default function Home() {
             <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900 dark:text-white">
               Recursos Poderosos
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-600 text-gray-300 max-w-2xl mx-auto">
               Tudo que você precisa para maximizar seu aprendizado e retenção de conhecimento
             </p>
           </motion.div>
@@ -458,7 +706,7 @@ export default function Home() {
       </section>
 
       {/* How It Works Section */}
-      <section className="py-20 px-4 bg-white dark:bg-gray-900 relative">
+      <section className="py-20 px-4 bg-gray-900 relative">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -470,7 +718,7 @@ export default function Home() {
             <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900 dark:text-white">
               Como Funciona
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            <p className="text-xl text-gray-600 text-gray-300 max-w-2xl mx-auto">
               Três passos simples para transformar seu aprendizado
             </p>
           </motion.div>
@@ -542,7 +790,7 @@ export default function Home() {
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link
                 href="/register"
-                className="bg-white text-violet-600 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-violet-50 transition-all shadow-lg inline-flex items-center gap-2"
+                className="bg-violet-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-violet-700 transition-all shadow-lg inline-flex items-center gap-2"
               >
                 <span>Criar Conta Gratuita</span>
                 <ArrowRight className="h-5 w-5" />
@@ -736,7 +984,7 @@ function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string
   return (
     <motion.div
       whileHover={{ scale: 1.05, y: -5 }}
-      className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 text-center"
+      className="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 border-gray-700 text-center"
     >
       <div className="text-violet-600 dark:text-violet-400 mb-3 flex justify-center">{icon}</div>
       <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{value}</div>
@@ -763,7 +1011,7 @@ function FeatureCard({
       viewport={{ once: true }}
       transition={{ duration: 0.6, delay }}
       whileHover={{ y: -10 }}
-      className="group p-6 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-violet-300 dark:hover:border-violet-600 transition-all hover:shadow-2xl bg-white dark:bg-gray-800 relative overflow-hidden"
+      className="group p-6 rounded-2xl border border-gray-200 border-gray-700 hover:border-violet-300 hover:border-violet-600 transition-all hover:shadow-2xl bg-gray-800 relative overflow-hidden"
     >
       <motion.div
         className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -772,7 +1020,7 @@ function FeatureCard({
       <div className="relative z-10">
         <div className="text-violet-600 dark:text-violet-400 mb-4">{icon}</div>
         <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">{title}</h3>
-        <p className="text-gray-600 dark:text-gray-300">{description}</p>
+        <p className="text-gray-600 text-gray-300">{description}</p>
       </div>
     </motion.div>
   );
@@ -801,7 +1049,7 @@ function StepCard({
         <span className="text-2xl font-bold text-white">{number}</span>
       </div>
       <h3 className="text-2xl font-semibold mb-3 text-gray-900 dark:text-white">{title}</h3>
-      <p className="text-gray-600 dark:text-gray-300">{description}</p>
+      <p className="text-gray-600 text-gray-300">{description}</p>
       
       {number !== "3" && (
         <motion.div

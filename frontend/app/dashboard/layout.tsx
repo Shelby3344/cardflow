@@ -56,25 +56,20 @@ export default function DashboardLayout({
         total_decks: 0,
         my_decks: [],
       });
+    } finally {
+      setLoading(false);
     }
   };
 
   // Carregar stats quando autenticar ou quando precisar refetch
   useEffect(() => {
     if (hasHydrated && isAuthenticated) {
-      // Verifica se precisa refetch antes de carregar
+      // Sempre carrega se shouldRefetch retornar true (cache expirado ou forceRefetch)
       if (shouldRefetch()) {
         loadSidebarStats();
       }
     }
-  }, [hasHydrated, isAuthenticated]);
-
-  // Recarregar stats quando lastFetch mudar (forceRefetch foi chamado)
-  useEffect(() => {
-    if (hasHydrated && isAuthenticated && lastFetch === null) {
-      loadSidebarStats();
-    }
-  }, [lastFetch, hasHydrated, isAuthenticated]);
+  }, [hasHydrated, isAuthenticated, lastFetch]); // Adicionado lastFetch como dependência
 
   if (!hasHydrated) {
     return (
@@ -202,7 +197,7 @@ export default function DashboardLayout({
               stats.my_decks.map((deck) => (
                 <Link
                   key={deck.id}
-                  href={`/dashboard`}
+                  href={`/dashboard?deck=${deck.id}`}
                   className="block p-3 bg-[#2d3b52] rounded-lg hover:bg-[#3d4b62] transition-colors"
                 >
                   <div className="flex items-center gap-3">

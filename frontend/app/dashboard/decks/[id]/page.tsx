@@ -177,42 +177,67 @@ export default function DeckDetailPage() {
           ))}
         </div>
       ) : cards && cards.length > 0 ? (
-        <div className="space-y-4">
-          {cards.map((card) => (
+        <div className="space-y-3">
+          {cards.map((card, index) => (
             <div
               key={card.id}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
+              className="group relative bg-zinc-900/50 backdrop-blur-sm border border-zinc-800/50 rounded-2xl overflow-hidden hover:border-purple-500/30 transition-all duration-300"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-3">
-                    {card.type === 'image' && <ImageIcon className="h-4 w-4 text-blue-600" />}
-                    {card.type === 'audio' && <Volume2 className="h-4 w-4 text-green-600" />}
-                    <span className="text-xs text-gray-500 dark:text-gray-400 uppercase">
-                      {card.type}
-                    </span>
+              <div className="flex items-center gap-4 p-5">
+                {/* Número do Card - Esquerda */}
+                <div className="relative flex-shrink-0">
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center shadow-lg">
+                    <span className="text-xl font-bold text-white">#{index + 1}</span>
+                  </div>
+                </div>
+
+                {/* Conteúdo do Card - Centro */}
+                <div className="flex-1 min-w-0">
+                  {/* Header com tipo e categoria */}
+                  <div className="flex items-center gap-2 mb-2">
+                    {card.type === 'image' && (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
+                        <ImageIcon className="h-3 w-3 text-blue-400" />
+                        <span className="text-xs text-blue-400 font-medium">Imagem</span>
+                      </div>
+                    )}
+                    {card.type === 'audio' && (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/10 border border-green-500/20">
+                        <Volume2 className="h-3 w-3 text-green-400" />
+                        <span className="text-xs text-green-400 font-medium">Áudio</span>
+                      </div>
+                    )}
+                    {card.type === 'text' && (
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-purple-500/10 border border-purple-500/20">
+                        <span className="text-xs text-purple-400 font-medium">Texto</span>
+                      </div>
+                    )}
                     {card.category && (
-                      <span className="text-xs bg-violet-100 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400 px-2 py-1 rounded">
+                      <span className="px-2 py-1 text-xs bg-violet-500/10 text-violet-400 rounded-md border border-violet-500/20 font-medium">
                         {card.category}
                       </span>
                     )}
                   </div>
-                  <div className="grid md:grid-cols-2 gap-4 mb-3">
+
+                  {/* Frente e Verso */}
+                  <div className="grid md:grid-cols-2 gap-3 mb-2">
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Frente</p>
-                      <p className="text-gray-900 dark:text-white">{card.front}</p>
+                      <p className="text-xs text-zinc-500 mb-1 font-medium">FRENTE</p>
+                      <p className="text-white font-medium line-clamp-2">{card.front}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Verso</p>
-                      <p className="text-gray-900 dark:text-white">{card.back}</p>
+                      <p className="text-xs text-zinc-500 mb-1 font-medium">VERSO</p>
+                      <p className="text-zinc-300 line-clamp-2">{card.back}</p>
                     </div>
                   </div>
+
+                  {/* Tags */}
                   {card.tags && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5 mt-2">
                       {card.tags.split(',').map((tag, i) => (
                         <span
                           key={i}
-                          className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-1 rounded"
+                          className="text-xs bg-zinc-800/50 text-zinc-400 px-2 py-0.5 rounded-md border border-zinc-700/50"
                         >
                           #{tag.trim()}
                         </span>
@@ -220,25 +245,35 @@ export default function DeckDetailPage() {
                     </div>
                   )}
                 </div>
-                <div className="flex space-x-2 ml-4">
+
+                {/* Ações - Direita */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Botão Editar */}
                   <button
                     onClick={() => setEditingCard(card)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                    className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-blue-500/10 text-blue-400 hover:text-blue-300 transition-all duration-200 border border-transparent hover:border-blue-500/30"
+                    title="Editar card"
                   >
-                    <Edit className="h-4 w-4" />
+                    <Edit className="w-4 h-4" />
                   </button>
+
+                  {/* Botão Excluir */}
                   <button
                     onClick={() => {
                       if (confirm('Tem certeza que deseja excluir este card?')) {
                         deleteMutation.mutate(card.id);
                       }
                     }}
-                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-red-500/10 text-red-400 hover:text-red-300 transition-all duration-200 border border-transparent hover:border-red-500/30"
+                    title="Excluir card"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
+
+              {/* Borda inferior gradiente no hover */}
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>
           ))}
         </div>
