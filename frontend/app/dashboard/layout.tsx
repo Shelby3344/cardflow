@@ -20,6 +20,22 @@ import {
 } from 'lucide-react';
 import { userStatsService } from '@/services/userStatsService';
 
+// Função helper para converter classes Tailwind em gradiente CSS
+const getGradientFromTailwind = (tailwindClass: string): string => {
+  const colorMap: { [key: string]: string } = {
+    'from-blue-500 to-blue-700': 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+    'from-purple-500 to-purple-700': 'linear-gradient(135deg, #a855f7, #7e22ce)',
+    'from-pink-500 to-pink-700': 'linear-gradient(135deg, #ec4899, #be185d)',
+    'from-green-500 to-green-700': 'linear-gradient(135deg, #22c55e, #15803d)',
+    'from-orange-500 to-orange-700': 'linear-gradient(135deg, #f97316, #c2410c)',
+    'from-red-500 to-red-700': 'linear-gradient(135deg, #ef4444, #b91c1c)',
+    'from-slate-700 to-slate-900': 'linear-gradient(135deg, #334155, #0f172a)',
+    'from-teal-500 to-teal-700': 'linear-gradient(135deg, #14b8a6, #0f766e)',
+  };
+  
+  return colorMap[tailwindClass] || 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+};
+
 export default function DashboardLayout({
   children,
 }: {
@@ -100,6 +116,15 @@ export default function DashboardLayout({
     <div className="flex h-screen bg-[#2d3b52] overflow-hidden">
       {/* Sidebar */}
       <aside className="w-[346px] bg-[#364358] flex flex-col border-r border-[#4a5568]">
+        {/* Logo */}
+        <div className="p-2 border-b border-[#4a5568] flex items-center justify-center">
+          <img 
+            src="/logo-white.png" 
+            alt="CardFlow Logo" 
+            className="h-[80px] w-auto object-contain"
+          />
+        </div>
+        
         {/* User Profile */}
         <div className="p-6 border-b border-[#4a5568]">
           <div className="flex items-center gap-3 mb-6">
@@ -203,9 +228,6 @@ export default function DashboardLayout({
                   <div className="flex items-center gap-3">
                     <div 
                       className="w-10 h-10 rounded flex-shrink-0 flex items-center justify-center text-2xl"
-                      style={{
-                        background: deck.color || 'linear-gradient(to br, rgb(51, 65, 85), rgb(30, 41, 59))',
-                      }}
                     >
                       {deck.icon || '📚'}
                     </div>

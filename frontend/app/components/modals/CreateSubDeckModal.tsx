@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { X, Plus, BookOpen } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { X, Upload, Palette } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface CreateSubDeckModalProps {
@@ -13,32 +13,62 @@ interface CreateSubDeckModalProps {
 
 export interface SubDeckFormData {
   name: string;
-  description: string;
-  order?: number;
+  icon: string;
+  image?: File | null;
 }
+
+const ICONS = ['📚', '📖', '🎓', '🧠', '💡', '🔬', '🎨', '🎵', '💻', '🌍', '⚡', '🚀', '📝', '🎯', '🔥', '⭐', '✨', '🌟'];
 
 export default function CreateSubDeckModal({ isOpen, onClose, onSubmit, parentDeckName }: CreateSubDeckModalProps) {
   const [formData, setFormData] = useState<SubDeckFormData>({
     name: '',
-    description: '',
+    icon: ICONS[0],
+    image: null,
   });
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Limpar formulário quando modal fecha
+  useEffect(() => {
+    if (!isOpen) {
+      setFormData({
+        name: '',
+        icon: ICONS[0],
+        image: null,
+      });
+      setImagePreview(null);
+    }
+  }, [isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      alert('Por favor, insira um nome para o sub-deck');
+      alert('Por favor, insira um nome para o flashcard');
       return;
     }
     onSubmit(formData);
-    handleClose();
   };
 
   const handleClose = () => {
     setFormData({
       name: '',
-      description: '',
+      icon: ICONS[0],
+      image: null,
     });
+    setImagePreview(null);
     onClose();
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFormData({ ...formData, image: file });
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -55,106 +85,61 @@ export default function CreateSubDeckModal({ isOpen, onClose, onSubmit, parentDe
           >
             {/* Modal */}
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              transition={{ type: 'spring', damping: 20 }}
-              className="bg-white rounded-2xl shadow-2xl max-w-xl w-full"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6 flex items-center justify-between rounded-t-2xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                    <Plus className="w-6 h-6 text-white" />
-                  </div>
+              <div className="p-6 bg-gradient-to-r from-blue-600 to-blue-800">
+                <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-2xl font-bold text-white">Adicionar Sub-Deck</h2>
-                    <p className="text-blue-100 text-sm">em: {parentDeckName}</p>
+                    <h2 className="text-2xl font-bold text-white">Criar Novo Flashcard</h2>
+                    <p className="text-blue-100 text-sm mt-1">Digite o nome do flashcard</p>
                   </div>
+                  <button
+                    onClick={handleClose}
+                    className="p-2 hover:bg-white/20 rounded-xl transition-all hover:rotate-90 duration-300"
+                  >
+                    <X className="w-6 h-6 text-white" />
+                  </button>
                 </div>
-                <button
-                  onClick={handleClose}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  <X className="w-6 h-6 text-white" />
-                </button>
               </div>
 
               {/* Form */}
-              <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                {/* Info Box */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <BookOpen className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-semibold text-blue-900 mb-1">O que é um sub-deck?</h4>
-                      <p className="text-sm text-blue-700">
-                        Sub-decks ajudam a organizar seu conteúdo em seções menores. Por exemplo, 
-                        um deck "Medicina" pode ter sub-decks como "Cardiologia", "Neurologia", etc.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Nome do Sub-Deck */}
+              <form onSubmit={handleSubmit} className="p-8">
+                {/* Nome do Subdeck */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Nome do Sub-Deck *
+                  <label className="block text-sm font-bold text-gray-800 mb-3">
+                    Nome do Flashcard *
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ex: Cardiologia"
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    placeholder="Ex: Capítulo 1, Verbos Irregulares..."
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all bg-white text-gray-900"
                     required
                     autoFocus
                   />
                 </div>
 
-                {/* Descrição */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Descrição (opcional)
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Adicione detalhes sobre este sub-deck..."
-                    rows={3}
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none"
-                  />
-                </div>
-
-                {/* Exemplo */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-semibold text-gray-900 mb-2 text-sm">💡 Dica de Organização</h4>
-                  <p className="text-sm text-gray-600 mb-2">
-                    Use sub-decks para dividir conteúdo extenso:
-                  </p>
-                  <ul className="text-sm text-gray-600 space-y-1 ml-4">
-                    <li>• Por capítulo (Capítulo 1, Capítulo 2...)</li>
-                    <li>• Por tópico (Introdução, Conceitos Avançados...)</li>
-                    <li>• Por dificuldade (Básico, Intermediário, Avançado)</li>
-                  </ul>
-                </div>
-
                 {/* Botões */}
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-4 pt-6">
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-colors"
+                    className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold transition-all"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg font-semibold transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-xl"
                   >
-                    <Plus className="w-5 h-5" />
-                    Criar Sub-Deck
+                    Criar Flashcard
                   </button>
                 </div>
               </form>

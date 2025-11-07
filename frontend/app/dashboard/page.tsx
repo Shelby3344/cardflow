@@ -8,7 +8,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import EditDeckModal from '../components/modals/EditDeckModal';
 import DeleteConfirmModal from '../components/modals/DeleteConfirmModal';
 import SimpleDeleteModal from '../components/modals/SimpleDeleteModal';
-import SimplePrompt from '../components/SimplePrompt';
+import CreateSubDeckModal from '../components/modals/CreateSubDeckModal';
 import RichTextEditor from '../components/RichTextEditor';
 import Toast, { ToastType } from '../components/Toast';
 import { deckService } from '@/services/deckService';
@@ -16,6 +16,22 @@ import { cardService } from '@/services/cardService';
 import { studyService, DeckStats } from '@/services/studyService';
 import { useDashboardStore } from '@/store/dashboardStore';
 import { useAuthStore } from '@/store/authStore';
+
+// Função helper para converter classes Tailwind em gradiente CSS
+const getGradientFromTailwind = (tailwindClass: string): string => {
+  const colorMap: { [key: string]: string } = {
+    'from-blue-500 to-blue-700': 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+    'from-purple-500 to-purple-700': 'linear-gradient(135deg, #a855f7, #7e22ce)',
+    'from-pink-500 to-pink-700': 'linear-gradient(135deg, #ec4899, #be185d)',
+    'from-green-500 to-green-700': 'linear-gradient(135deg, #22c55e, #15803d)',
+    'from-orange-500 to-orange-700': 'linear-gradient(135deg, #f97316, #c2410c)',
+    'from-red-500 to-red-700': 'linear-gradient(135deg, #ef4444, #b91c1c)',
+    'from-slate-700 to-slate-900': 'linear-gradient(135deg, #334155, #0f172a)',
+    'from-teal-500 to-teal-700': 'linear-gradient(135deg, #14b8a6, #0f766e)',
+  };
+  
+  return colorMap[tailwindClass] || 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -25,15 +41,15 @@ export default function DashboardPage() {
   
   const [selectedDeckId, setSelectedDeckId] = useState<number | null>(null);
   const [selectedDeckForCards, setSelectedDeckForCards] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<'about' | 'decks'>('decks');
+  const [activeTab, setActiveTab] = useState<'cards' | 'sobre' | 'autor'>('cards');
   const [isEditMode, setIsEditMode] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
-  const [subdecksRefreshKey, setSubdecksRefreshKey] = useState(0);
   const [deckStats, setDeckStats] = useState<DeckStats | null>(null);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deckToDelete, setDeckToDelete] = useState<any>(null);
   const [openCardMenuId, setOpenCardMenuId] = useState<number | null>(null);
   const [selectedCardForEdit, setSelectedCardForEdit] = useState<any>(null);
   const [selectedCardForDelete, setSelectedCardForDelete] = useState<any>(null);
@@ -104,31 +120,55 @@ export default function DashboardPage() {
 
   // Buscar subdecks do deck selecionado (para exibir como "flashcards")
   const { data: subdecks = [], isLoading: subdecksLoading } = useQuery({
-    queryKey: ['subdecks', selectedDeckId, subdecksRefreshKey],
+    queryKey: ['subdecks', selectedDeckId],
     queryFn: async () => {
-      if (!selectedDeckId) return [];
-      console.log('Fetching subdecks for deck:', selectedDeckId);
+      if (!selectedDeckId) {
+        console.log('No selectedDeckId, returning empty array');
+        return [];
+      }
+      console.log('=== FETCHING SUBDECKS ===');
+      console.log('selectedDeckId:', selectedDeckId, 'type:', typeof selectedDeckId);
+      
       const response = await deckService.getDecks();
       console.log('All decks response:', response);
+      
       if (response.success && response.data) {
+        console.log('Total decks received:', response.data.length);
         console.log('All decks:', response.data);
+        
         // Filtrar apenas subdecks do deck selecionado
         const filtered = response.data.filter((deck: any) => {
-          console.log(`Checking deck ${deck.id}: parent_id=${deck.parent_id} (type: ${typeof deck.parent_id}), selectedDeckId=${selectedDeckId} (type: ${typeof selectedDeckId}), match=${deck.parent_id == selectedDeckId}`);
-          // Usar == para comparação flexível (permite string vs number)
-          return deck.parent_id == selectedDeckId;
+          const isMatch = deck.parent_id == selectedDeckId;
+          console.log(`Deck ${deck.id} "${deck.title}": parent_id=${deck.parent_id} (${typeof deck.parent_id}), selectedDeckId=${selectedDeckId} (${typeof selectedDeckId}), match=${isMatch}`);
+          return isMatch;
         });
+        
+        console.log('=== FILTERED SUBDECKS ===');
+        console.log('Filtered count:', filtered.length);
         console.log('Filtered subdecks:', filtered);
         return filtered;
       }
+      console.log('No data in response, returning empty array');
       return [];
     },
     enabled: !!selectedDeckId,
     staleTime: 0, // Sem cache para debug
-    refetchOnMount: true,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: false,
   });
 
+  // Limpar queries antigas com subdecksRefreshKey ao montar o componente
+  useEffect(() => {
+    queryClient.removeQueries({ 
+      predicate: (query) => {
+        const key = query.queryKey;
+        return Array.isArray(key) && key[0] === 'subdecks' && key.length === 3;
+      }
+    });
+  }, [queryClient]);
+
+  console.log('=== CURRENT STATE ===');
+  console.log('Current subdecks count:', subdecks.length);
   console.log('Current subdecks:', subdecks);
 
   const loading = decksLoading || deckLoading || cardsLoading;
@@ -343,54 +383,64 @@ export default function DashboardPage() {
   };
 
   const handleDeleteDeck = async () => {
-    if (!selectedDeck) return;
+    const targetDeck = deckToDelete || selectedDeck;
+    if (!targetDeck) return;
 
     setShowDeleteModal(false);
     setDeleting(true);
     
     try {
-      const response = await deckService.deleteDeck(selectedDeck.id);
+      const response = await deckService.deleteDeck(targetDeck.id);
       if (response.success) {
         // Remover deck otimisticamente de todas as queries
         queryClient.setQueryData(['decks'], (old: any) => {
           if (!old) return old;
-          return old.filter((deck: any) => deck.id !== selectedDeck.id);
+          return old.filter((deck: any) => deck.id !== targetDeck.id);
         });
         
         // Invalidar todos os caches relacionados
         queryClient.invalidateQueries({ queryKey: ['decks'] });
-        queryClient.invalidateQueries({ queryKey: ['deck', selectedDeck.id] });
-        queryClient.removeQueries({ queryKey: ['deck', selectedDeck.id] });
-        queryClient.removeQueries({ queryKey: ['cards', selectedDeck.id] });
+        queryClient.invalidateQueries({ queryKey: ['subdecks'] });
+        queryClient.invalidateQueries({ queryKey: ['deck', targetDeck.id] });
+        queryClient.removeQueries({ queryKey: ['deck', targetDeck.id] });
+        queryClient.removeQueries({ queryKey: ['cards', targetDeck.id] });
         
         // Força atualização do menu lateral
         forceRefetch();
         
         // Mostrar toast de sucesso
         setToast({
-          message: 'Deck excluído com sucesso!',
+          message: 'Flashcard excluído com sucesso!',
           type: 'success',
           isVisible: true,
         });
         
-        // Redirecionar para biblioteca imediatamente
-        router.push('/dashboard/library');
+        // Se for um subdeck, não redirecionar
+        if (targetDeck.parent_id) {
+          // Apenas fechar o modal e atualizar a lista
+          setOpenCardMenuId(null);
+          setDeckToDelete(null);
+        } else {
+          // Se for deck principal, redirecionar para biblioteca
+          router.push('/dashboard/library');
+        }
       } else {
         setToast({
-          message: 'Erro ao excluir deck',
+          message: 'Erro ao excluir flashcard',
           type: 'error',
           isVisible: true,
         });
       }
     } catch (error) {
-      console.error('Erro ao excluir deck:', error);
+      console.error('Erro ao excluir flashcard:', error);
       setToast({
-        message: 'Erro ao excluir deck. Tente novamente.',
+        message: 'Erro ao excluir flashcard. Tente novamente.',
         type: 'error',
         isVisible: true,
       });
     } finally {
       setDeleting(false);
+      setDeckToDelete(null);
     }
   };
 
@@ -414,8 +464,8 @@ export default function DashboardPage() {
     setShowPrompt(true);
   };
 
-  const handlePromptConfirm = (name: string) => {
-    handleCreateSubDeck({ name, description: '' });
+  const handleSubdeckSubmit = (subDeckData: any) => {
+    handleCreateSubDeck(subDeckData);
   };
 
   const handleDeleteCardClick = (card: any) => {
@@ -483,39 +533,41 @@ export default function DashboardPage() {
 
       const apiData: any = {
         name: subDeckData.name,
-        description: subDeckData.description || undefined,
+        icon: subDeckData.icon || '📚',
         parent_id: selectedDeck.id,
         is_public: false,
       };
 
+      // Se tiver imagem, precisará fazer upload separado (implementar depois)
+      if (subDeckData.image) {
+        console.log('Image upload not yet implemented:', subDeckData.image);
+      }
+
       console.log('Creating subdeck with data:', apiData);
+      console.log('parent_id being sent:', apiData.parent_id, 'type:', typeof apiData.parent_id);
       const response = await deckService.createDeck(apiData);
       console.log('Create subdeck response:', response);
+      console.log('Response data parent_id:', response.data?.parent_id, 'type:', typeof response.data?.parent_id);
       
       if (response.success) {
         console.log('Subdeck created successfully!');
+        console.log('Created subdeck data:', response.data);
+        
+        // Fechar o modal primeiro
+        setShowPrompt(false);
+        
+        // Mostrar toast de sucesso
         setToast({
           message: 'Flashcard criado com sucesso!',
           type: 'success',
           isVisible: true,
         });
         
-        console.log('Clearing all query cache...');
-        // Limpar todo o cache de queries relacionadas
-        queryClient.removeQueries({ queryKey: ['subdecks'] });
-        queryClient.removeQueries({ queryKey: ['decks'] });
-        queryClient.removeQueries({ queryKey: ['deck'] });
-        
-        // Forçar atualização mudando a key
-        setSubdecksRefreshKey(prev => prev + 1);
-        
-        // Aguardar um pouco e refetch
-        setTimeout(async () => {
-          console.log('Refetching after timeout...');
-          await queryClient.refetchQueries({ queryKey: ['subdecks', selectedDeckId, subdecksRefreshKey + 1] });
-          await queryClient.refetchQueries({ queryKey: ['decks'] });
-          console.log('Refetch completed');
-        }, 300);
+        console.log('Invalidating query cache...');
+        // Invalidar TODAS as queries relacionadas (força refetch imediato)
+        await queryClient.invalidateQueries({ queryKey: ['subdecks'], refetchType: 'all' });
+        await queryClient.invalidateQueries({ queryKey: ['decks'], refetchType: 'all' });
+        await queryClient.refetchQueries({ queryKey: ['subdecks', selectedDeckId] });
       } else {
         setToast({
           message: 'Erro ao criar flashcard: ' + (response.errors ? JSON.stringify(response.errors) : 'Erro desconhecido'),
@@ -589,9 +641,8 @@ export default function DashboardPage() {
           <div 
             className="w-40 h-40 rounded-2xl flex-shrink-0 flex items-center justify-center shadow-lg overflow-hidden"
             style={{
-              backgroundColor: selectedDeck.color || '#1e293b',
               background: selectedDeck.color 
-                ? `linear-gradient(135deg, ${selectedDeck.color}dd, ${selectedDeck.color})` 
+                ? getGradientFromTailwind(selectedDeck.color)
                 : 'linear-gradient(135deg, #1e293b, #0f172a)'
             }}
           >
@@ -769,39 +820,76 @@ export default function DashboardPage() {
 
       {/* Flashcards do Deck - Estilo Brainscape */}
       <div className="p-8 border-t border-gray-200">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900">
-            {isEditMode && selectedDeckForCards ? 
-              subdecks.find(d => d.id === selectedDeckForCards)?.title || 'Flashcards' 
-              : 'Flashcards'}
-          </h2>
-          <div className="flex items-center gap-3">
-            {isEditMode ? (
-              <button
-                onClick={() => {
-                  setIsEditMode(false);
-                  setSelectedDeckForCards(null);
-                  setEditingCards({});
-                }}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition-colors"
-              >
-                Voltar
-              </button>
-            ) : subdecks.length > 0 ? (
-              <button
-                onClick={handleCreateNewDeck}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                Criar Flashcard
-              </button>
-            ) : null}
-          </div>
+        {/* Menu de Tabs */}
+        <div className="flex items-center gap-1 border-b border-gray-200 mb-6">
+          <button
+            onClick={() => setActiveTab('cards')}
+            className={`px-6 py-3 font-semibold transition-all ${
+              activeTab === 'cards'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Cards
+          </button>
+          <button
+            onClick={() => setActiveTab('sobre')}
+            className={`px-6 py-3 font-semibold transition-all ${
+              activeTab === 'sobre'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Sobre
+          </button>
+          <button
+            onClick={() => setActiveTab('autor')}
+            className={`px-6 py-3 font-semibold transition-all ${
+              activeTab === 'autor'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Autor
+          </button>
         </div>
 
-        {!isEditMode ? (
-          /* Lista de Sub-Decks (Flashcards) */
-          subdecks.length > 0 ? (
+        {/* Tab Content: Cards */}
+        {activeTab === 'cards' && (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">
+                {isEditMode && selectedDeckForCards ? 
+                  subdecks.find(d => d.id === selectedDeckForCards)?.title || 'Flashcards' 
+                  : 'Flashcards'}
+              </h2>
+              <div className="flex items-center gap-3">
+                {isEditMode ? (
+                  <button
+                    onClick={() => {
+                      setIsEditMode(false);
+                      setSelectedDeckForCards(null);
+                      setEditingCards({});
+                    }}
+                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition-colors"
+                  >
+                    Voltar
+                  </button>
+                ) : subdecks.length > 0 ? (
+                  <button
+                    onClick={handleCreateNewDeck}
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Criar Flashcard
+                  </button>
+                ) : null}
+              </div>
+            </div>
+
+            {!isEditMode ? (
+              /* Lista de Sub-Decks (Flashcards) */
+              subdecks.length > 0 ? (
             <div className="space-y-2">
               {subdecks.map((deck: any) => {
                 const progress = deck.mastery_percentage || 0;
@@ -875,14 +963,14 @@ export default function DashboardPage() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedDeckId(deck.id);
-                                  setIsEditModalOpen(true);
+                                  setDeckToDelete(deck);
+                                  setShowDeleteModal(true);
                                   setOpenCardMenuId(null);
                                 }}
                                 className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
                               >
                                 <Trash2 className="w-4 h-4" />
-                                Excluir Deck
+                                Excluir Flashcard
                               </button>
                             </div>
                           )}
@@ -905,7 +993,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-              <p className="text-gray-500 mb-4">Nenhuma sub-matéria criada ainda</p>
+              <p className="text-gray-500 mb-4">Nenhum Flashcard criado ainda</p>
               <button
                 onClick={handleCreateNewDeck}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg font-semibold transition-all"
@@ -1018,6 +1106,86 @@ export default function DashboardPage() {
             </button>
           </div>
         )}
+          </>
+        )}
+
+        {/* Tab Content: Sobre */}
+        {activeTab === 'sobre' && selectedDeck && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Informações do Deck</h2>
+            
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Nome</label>
+                <p className="text-gray-900 text-lg">{selectedDeck.title}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Descrição</label>
+                <p className="text-gray-600">{selectedDeck.description || 'Sem descrição'}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Total de Cards</label>
+                  <p className="text-gray-900 text-lg">{subdecks.reduce((sum: number, d: any) => sum + (d.card_count || 0), 0)}</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Sub-decks</label>
+                  <p className="text-gray-900 text-lg">{subdecks.length}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                <p className="text-gray-600">{selectedDeck.is_public ? 'Público' : 'Privado'}</p>
+              </div>
+
+              <div className="pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors"
+                >
+                  Editar Deck
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab Content: Autor */}
+        {activeTab === 'autor' && selectedDeck && (
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Informações do Autor</h2>
+            
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">{user?.name || 'Usuário'}</h3>
+                  <p className="text-gray-600">{user?.email}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Criado em</label>
+                <p className="text-gray-600">
+                  {selectedDeck.created_at ? new Date(selectedDeck.created_at).toLocaleDateString('pt-BR') : 'Data não disponível'}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Última atualização</label>
+                <p className="text-gray-600">
+                  {selectedDeck.updated_at ? new Date(selectedDeck.updated_at).toLocaleDateString('pt-BR') : 'Data não disponível'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modais */}
@@ -1039,11 +1207,17 @@ export default function DashboardPage() {
       {/* Modal de Confirmação de Exclusão do Deck */}
       <DeleteConfirmModal
         isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setDeckToDelete(null);
+        }}
         onConfirm={handleDeleteDeck}
-        title="Excluir Deck"
-        message="Tem certeza que deseja excluir este deck? Todos os cards e subdecks serão permanentemente removidos."
-        itemName={selectedDeck?.title}
+        title={(deckToDelete || selectedDeck)?.parent_id ? "Excluir Flashcard" : "Excluir Deck"}
+        message={(deckToDelete || selectedDeck)?.parent_id 
+          ? "Tem certeza que deseja excluir este flashcard? Todos os cards serão permanentemente removidos."
+          : "Tem certeza que deseja excluir este deck? Todos os cards e flashcards serão permanentemente removidos."
+        }
+        itemName={(deckToDelete || selectedDeck)?.title}
       />
 
       {/* Modal de Confirmação de Exclusão do Card - Simples */}
@@ -1057,14 +1231,12 @@ export default function DashboardPage() {
         itemName={selectedCardForDelete?.front?.replace(/<[^>]*>/g, '') || ''}
       />
 
-      {/* Prompt Simples para Criar Flashcard */}
-      <SimplePrompt
+      {/* Modal para Criar Flashcard (Subdeck) */}
+      <CreateSubDeckModal
         isOpen={showPrompt}
-        title="Criar Flashcard"
-        placeholder="Nome do flashcard..."
-        description="Um Card é um subconjunto de flashcards em uma aula, semelhante aos capítulos de um livro."
-        onConfirm={handlePromptConfirm}
         onClose={() => setShowPrompt(false)}
+        onSubmit={handleSubdeckSubmit}
+        parentDeckName={selectedDeck?.name || ''}
       />
 
       {/* Toast de Notificação */}

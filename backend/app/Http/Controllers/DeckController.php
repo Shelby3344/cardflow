@@ -20,25 +20,56 @@ class DeckController extends Controller
         $user = $request->user();
         $filter = $request->get('filter', 'all');
 
-        // Cache por 5 minutos (300 segundos)
-        $cacheKey = "decks_index_{$user->id}_{$filter}";
+        // TEMPORARIAMENTE DESABILITADO O CACHE PARA DEBUG
+        // $cacheKey = "decks_index_{$user->id}_{$filter}";
+        // return Cache::remember($cacheKey, 300, function () use ($user, $filter) {
 
-        return Cache::remember($cacheKey, 300, function () use ($user, $filter) {
-            $query = Deck::where('user_id', $user->id)
-                ->mainDecks()
-                ->with(['subDecks' => function ($q) {
-                    $q->select('id', 'parent_id', 'name');
-                }])
-                ->withCount('cards')
-                ->select('id', 'name', 'description', 'icon', 'color', 'image_url', 'is_public', 'parent_id', 'order', 'created_at', 'updated_at', 'user_id')
-                ->latest();
+        // Ativar log de SQL
+        \DB::enableQueryLog();
 
-            // Filtro por visibilidade
-            if ($filter === 'public') {
-                $query->public();
-            }
+        $query = Deck::where('user_id', $user->id)
+            // Removido ->mainDecks() para incluir subdecks na listagem
+            ->with(['subDecks' => function ($q) {
+                $q->select('id', 'parent_id', 'name');
+            }])
+            ->withCount('cards')
+            ->select('id', 'name', 'description', 'icon', 'color', 'image_url', 'is_public', 'parent_id', 'order', 'created_at', 'updated_at', 'user_id')
+            ->latest();
 
-            $decks = $query->get();
+        // Filtro por visibilidade
+        if ($filter === 'public') {
+            $query->public();
+        }
+
+        $decks = $query->get();
+
+        // Log SQL executado
+        $queries = \DB::getQueryLog();
+        \Log::info('DeckController index - SQL Query:', [
+            'queries' => $queries,
+        ]);
+
+        // DEBUG: Log quantos decks foram encontrados
+        \Log::info('=== DeckController index - START ===', [
+            'user_id' => $user->id,
+            'filter' => $filter,
+            'timestamp' => now()->toDateTimeString(),
+        ]);
+
+        \Log::info('DeckController index - Query result:', [
+            'count' => $decks->count(),
+            'deck_ids' => $decks->pluck('id')->toArray(),
+            'parent_ids' => $decks->pluck('parent_id')->toArray(),
+            'names' => $decks->pluck('name')->toArray(),
+        ]);
+
+        // Verificar se existem subdecks no banco
+        $allUserDecks = Deck::where('user_id', $user->id)->get();
+        \Log::info('DeckController index - ALL decks in DB (ignoring query):', [
+            'total_count' => $allUserDecks->count(),
+            'all_ids' => $allUserDecks->pluck('id')->toArray(),
+            'all_parent_ids' => $allUserDecks->pluck('parent_id')->toArray(),
+        ]);
 
             // Buscar estatísticas básicas em uma única query
             $deckIds = $decks->pluck('id');
@@ -85,7 +116,7 @@ class DeckController extends Controller
                 'success' => true,
                 'data' => $decksWithStats,
             ]);
-        });
+        // }); // Comentado temporariamente - era o fechamento do Cache::remember
     }
 
     /**
@@ -332,10 +363,14 @@ class DeckController extends Controller
         $deck = Deck::create($data);
         $deck->load(['subDecks', 'cards']);
 
-        // Invalidar cache
+        // Invalidar TODOS os caches relacionados a decks do usuário
         Cache::forget("decks_index_{$user->id}_all");
         Cache::forget("decks_index_{$user->id}_mine");
+        Cache::forget("decks_index_{$user->id}_public");
         Cache::forget("sidebar_stats_{$user->id}");
+
+        // Limpar qualquer cache que comece com decks_index para este usuário
+        Cache::tags(["user_{$user->id}_decks"])->flush();
 
         return response()->json([
             'success' => true,

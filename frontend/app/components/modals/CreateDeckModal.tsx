@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, Upload, BookOpen, Palette } from 'lucide-react';
+import { X, Upload, BookOpen, Palette, PenLine, Bot, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface CreateDeckModalProps {
@@ -34,6 +34,7 @@ const COLORS = [
 const ICONS = ['📚', '📖', '🎓', '🧠', '💡', '🔬', '🎨', '🎵', '💻', '🌍', '⚡', '🚀'];
 
 export default function CreateDeckModal({ isOpen, onClose, onSubmit, isSubmitting = false }: CreateDeckModalProps) {
+  const [step, setStep] = useState<'method' | 'form'>('method'); // Nova state para controlar etapa
   const [formData, setFormData] = useState<DeckFormData>({
     name: '',
     description: '',
@@ -48,6 +49,7 @@ export default function CreateDeckModal({ isOpen, onClose, onSubmit, isSubmittin
   // Limpar formulário quando modal fecha
   useEffect(() => {
     if (!isOpen) {
+      setStep('method'); // Resetar para primeira etapa
       setFormData({
         name: '',
         description: '',
@@ -71,6 +73,7 @@ export default function CreateDeckModal({ isOpen, onClose, onSubmit, isSubmittin
   };
 
   const handleClose = () => {
+    setStep('method');
     setFormData({
       name: '',
       description: '',
@@ -124,8 +127,14 @@ export default function CreateDeckModal({ isOpen, onClose, onSubmit, isSubmittin
                       <BookOpen className="w-8 h-8 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-3xl font-bold text-white">Criar Novo Deck</h2>
-                      <p className="text-blue-100 text-sm mt-1">Organize seu conhecimento de forma inteligente</p>
+                      <h2 className="text-3xl font-bold text-white">
+                        {step === 'method' ? 'Faça Cartões De Memorização' : 'Criar Novo Deck'}
+                      </h2>
+                      <p className="text-blue-100 text-sm mt-1">
+                        {step === 'method' 
+                          ? 'Agora, escolha como você quer fazer seus cartões de memorização.'
+                          : 'Preencha as informações do seu deck'}
+                      </p>
                     </div>
                   </div>
                   <button
@@ -137,10 +146,86 @@ export default function CreateDeckModal({ isOpen, onClose, onSubmit, isSubmittin
                 </div>
               </div>
 
-              {/* Form com scroll suave */}
-              <form onSubmit={handleSubmit} className="p-8 space-y-8 overflow-y-auto max-h-[calc(90vh-120px)]"
-                style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}
-              >
+              {/* Conteúdo - Etapa 1: Escolher Método */}
+              {step === 'method' && (
+                <div className="p-8 space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    {/* Manual */}
+                    <div className="text-center">
+                      <h3 className="text-xl font-bold text-gray-700 mb-4">Manual</h3>
+                      <button
+                        type="button"
+                        onClick={() => setStep('form')}
+                        className="w-full aspect-[3/2] bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 flex flex-col items-center justify-center gap-3 text-white p-6"
+                      >
+                        <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                          <PenLine className="w-8 h-8" />
+                        </div>
+                        <span className="font-semibold text-lg">Criar novo Deck</span>
+                      </button>
+                    </div>
+
+                    {/* Com IA */}
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2 mb-4">
+                        <h3 className="text-xl font-bold text-gray-700">Com inteligência artificial</h3>
+                        <span className="px-2 py-0.5 bg-blue-100 text-blue-600 text-xs font-bold rounded">I.A</span>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <button
+                          type="button"
+                          className="w-full py-4 bg-slate-400 hover:bg-slate-500 rounded-xl shadow-md hover:shadow-lg transition-all text-white font-medium flex items-center justify-center gap-2"
+                        >
+                          <FileText className="w-5 h-5" />
+                          <span>Importar/Colar Flashcards</span>
+                        </button>
+                        
+                        <div className="text-gray-500 text-sm font-medium">- OU -</div>
+                        
+                        <button
+                          type="button"
+                          className="w-full py-4 bg-slate-400 hover:bg-slate-500 rounded-xl shadow-md hover:shadow-lg transition-all text-white font-medium flex items-center justify-center gap-2"
+                        >
+                          <BookOpen className="w-5 h-5" />
+                          <span>Resumir a partir do conteúdo</span>
+                        </button>
+                        
+                        <button
+                          type="button"
+                          className="w-full py-4 bg-slate-400 hover:bg-slate-500 rounded-xl shadow-md hover:shadow-lg transition-all text-white font-medium flex items-center justify-center gap-2"
+                        >
+                          <Bot className="w-5 h-5" />
+                          <span>Gerar conteúdo com I.A </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Nota informativa */}
+                  <div className="flex items-start gap-2 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                    <span className="text-blue-600 text-lg">💡</span>
+                    <p className="text-sm text-gray-600">
+                      Você pode alternar entre a criação manual e automática a qualquer momento no modo de edição.{' '}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Conteúdo - Etapa 2: Formulário */}
+              {step === 'form' && (
+                <form onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]"
+                  style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}
+                >
+                  {/* Botão Voltar */}
+                  <button
+                    type="button"
+                    onClick={() => setStep('method')}
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                  >
+                    <span>←</span> Voltar
+                  </button>
+
                 {/* Nome do Deck */}
                 <div className="group">
                   <label className="block text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
@@ -152,7 +237,7 @@ export default function CreateDeckModal({ isOpen, onClose, onSubmit, isSubmittin
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Ex: Medicina Interna, JavaScript Avançado..."
-                    className="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-lg bg-white shadow-sm hover:shadow-md"
+                    className="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-lg bg-white shadow-sm hover:shadow-md text-gray-900"
                     required
                   />
                 </div>
@@ -168,7 +253,7 @@ export default function CreateDeckModal({ isOpen, onClose, onSubmit, isSubmittin
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Descreva o conteúdo e objetivos do seu deck de estudos..."
                     rows={4}
-                    className="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all resize-none bg-white shadow-sm hover:shadow-md"
+                    className="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 transition-all resize-none bg-white shadow-sm hover:shadow-md text-gray-900"
                   />
                 </div>
 
@@ -333,6 +418,7 @@ export default function CreateDeckModal({ isOpen, onClose, onSubmit, isSubmittin
                   </button>
                 </div>
               </form>
+              )}
             </motion.div>
           </motion.div>
         </>
