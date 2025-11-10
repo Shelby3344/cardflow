@@ -19,7 +19,7 @@
     "@tiptap/extension-text-align": "^3.10.2",
     "@tiptap/extension-text-style": "^3.10.2",
     "@tiptap/extension-underline": "^3.7.2",
-    "@tiptap/react": "^3.7.2",
+    "@tiptap/react": "^3.10.2",
     "@tiptap/starter-kit": "^3.7.2",
     "axios": "^1.12.2",
     "clsx": "^2.1.1",
