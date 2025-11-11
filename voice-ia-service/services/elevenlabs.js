@@ -18,7 +18,8 @@ const ELEVENLABS_API_BASE = 'https://api.elevenlabs.io/v1';
 const validateVoiceId = (voiceId) => {
   // Validar formato: apenas letras e números, sem caracteres especiais
   if (!/^[a-zA-Z0-9]+$/.test(voiceId)) {
-    console.warn(`VoiceId inválido: ${voiceId}. Usando default.`);
+    const safeVoiceId = String(voiceId).replace(/[\r\n]/g, '');
+    console.warn(`VoiceId inválido: ${safeVoiceId}. Usando default.`);
     return ALLOWED_VOICE_IDS[0];
   }
   
