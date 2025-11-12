@@ -47,7 +47,6 @@ export default function DashboardPage() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [deckStats, setDeckStats] = useState<DeckStats | null>(null);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deckToDelete, setDeckToDelete] = useState<any>(null);
   const [openCardMenuId, setOpenCardMenuId] = useState<number | null>(null);
