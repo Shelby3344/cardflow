@@ -123,32 +123,16 @@ export default function DashboardPage() {
     queryKey: ['subdecks', selectedDeckId],
     queryFn: async () => {
       if (!selectedDeckId) {
-        console.log('No selectedDeckId, returning empty array');
         return [];
       }
-      console.log('=== FETCHING SUBDECKS ===');
-      console.log('selectedDeckId:', selectedDeckId, 'type:', typeof selectedDeckId);
       
       const response = await deckService.getDecks();
-      console.log('All decks response:', response);
       
       if (response.success && response.data) {
-        console.log('Total decks received:', response.data.length);
-        console.log('All decks:', response.data);
-        
         // Filtrar apenas subdecks do deck selecionado
-        const filtered = response.data.filter((deck: any) => {
-          const isMatch = deck.parent_id == selectedDeckId;
-          console.log(`Deck ${deck.id} "${deck.title}": parent_id=${deck.parent_id} (${typeof deck.parent_id}), selectedDeckId=${selectedDeckId} (${typeof selectedDeckId}), match=${isMatch}`);
-          return isMatch;
-        });
-        
-        console.log('=== FILTERED SUBDECKS ===');
-        console.log('Filtered count:', filtered.length);
-        console.log('Filtered subdecks:', filtered);
+        const filtered = response.data.filter((deck: any) => deck.parent_id == selectedDeckId);
         return filtered;
       }
-      console.log('No data in response, returning empty array');
       return [];
     },
     enabled: !!selectedDeckId,
@@ -166,10 +150,6 @@ export default function DashboardPage() {
       }
     });
   }, [queryClient]);
-
-  console.log('=== CURRENT STATE ===');
-  console.log('Current subdecks count:', subdecks.length);
-  console.log('Current subdecks:', subdecks);
 
   const loading = decksLoading || deckLoading || cardsLoading;
 
@@ -518,7 +498,6 @@ export default function DashboardPage() {
   const handleCreateSubDeck = async (subDeckData: any) => {
     try {
       if (!selectedDeck) {
-        console.error('No deck selected!');
         setToast({
           message: 'Nenhum deck selecionado',
           type: 'error',
@@ -527,10 +506,6 @@ export default function DashboardPage() {
         return;
       }
 
-      console.log('Selected deck:', selectedDeck);
-      console.log('Selected deck ID:', selectedDeck.id);
-      console.log('selectedDeckId state:', selectedDeckId);
-
       const apiData: any = {
         name: subDeckData.name,
         icon: subDeckData.icon || '📚',
@@ -538,16 +513,7 @@ export default function DashboardPage() {
         is_public: false,
       };
 
-      // Se tiver imagem, precisará fazer upload separado (implementar depois)
-      if (subDeckData.image) {
-        console.log('Image upload not yet implemented:', subDeckData.image);
-      }
-
-      console.log('Creating subdeck with data:', apiData);
-      console.log('parent_id being sent:', apiData.parent_id, 'type:', typeof apiData.parent_id);
       const response = await deckService.createDeck(apiData);
-      console.log('Create subdeck response:', response);
-      console.log('Response data parent_id:', response.data?.parent_id, 'type:', typeof response.data?.parent_id);
       
       if (response.success) {
         console.log('Subdeck created successfully!');

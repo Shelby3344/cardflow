@@ -29,8 +29,6 @@ export default function LoginPage() {
       login(user, token);
       router.push('/dashboard');
     } catch (err: any) {
-      console.error('Erro no login:', err.response?.data);
-      
       if (err.response?.data?.errors) {
         const errors = err.response.data.errors;
         const errorMessages = Object.entries(errors)

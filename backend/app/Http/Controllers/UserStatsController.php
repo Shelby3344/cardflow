@@ -20,36 +20,31 @@ class UserStatsController extends Controller
         $user = $request->user();
         $userId = $user->id;
 
-        // Cache por 5 minutos (300 segundos)
-        $cacheKey = "sidebar_stats_{$userId}";
+        // Dias seguidos (streak) - dias consecutivos com pelo menos 1 sessão de estudo
+        $daysStreak = $this->calculateStreak($userId);
 
-        return Cache::remember($cacheKey, 300, function () use ($userId) {
-            // Dias seguidos (streak) - dias consecutivos com pelo menos 1 sessão de estudo
-            $daysStreak = $this->calculateStreak($userId);
+        // Tempo estudado hoje
+        $studiedToday = $this->getStudiedToday($userId);
 
-            // Tempo estudado hoje
-            $studiedToday = $this->getStudiedToday($userId);
+        // Média de tempo estudado por dia (últimos 7 dias)
+        $avgStudiedPerDay = $this->getAverageStudyTime($userId);
 
-            // Média de tempo estudado por dia (últimos 7 dias)
-            $avgStudiedPerDay = $this->getAverageStudyTime($userId);
+        // Lista de decks do usuário com progresso
+        $myDecks = $this->getUserDecksWithProgress($userId);
 
-            // Lista de decks do usuário com progresso
-            $myDecks = $this->getUserDecksWithProgress($userId);
+        // Total de classes (decks)
+        $totalDecks = Deck::where('user_id', $userId)->whereNull('parent_id')->count();
 
-            // Total de classes (decks)
-            $totalDecks = Deck::where('user_id', $userId)->mainDecks()->count();
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'days_streak' => $daysStreak,
-                    'studied_today' => $studiedToday,
-                    'avg_studied_per_day' => $avgStudiedPerDay,
-                    'total_decks' => $totalDecks,
-                    'my_decks' => $myDecks,
-                ],
-            ]);
-        });
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'days_streak' => $daysStreak,
+                'studied_today' => $studiedToday,
+                'avg_studied_per_day' => $avgStudiedPerDay,
+                'total_decks' => $totalDecks,
+                'my_decks' => $myDecks,
+            ],
+        ]);
     }
 
     /**

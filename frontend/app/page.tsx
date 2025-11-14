@@ -79,7 +79,7 @@ function AnimatedCardsStack() {
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-        className="relative w-full max-w-md h-[500px]"
+        className="relative w-full max-w-sm md:max-w-md h-[500px] mx-auto"
       >
         {cards.map((card, index) => {
           const offset = index - activeCard;
@@ -128,7 +128,7 @@ function AnimatedCardsStack() {
                 {/* Main Card */}
                 <div className={`relative w-full h-full rounded-3xl bg-gradient-to-br ${card.gradient} p-1 shadow-2xl overflow-hidden`}>
                   {/* Inner Card */}
-                  <div className="w-full h-full bg-gray-900/95 backdrop-blur-xl rounded-[1.4rem] p-8 flex flex-col justify-between">
+                  <div className="w-full h-full bg-gray-900/95 backdrop-blur-xl rounded-[1.4rem] p-5 md:p-8 flex flex-col justify-between">
                     {/* Header */}
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
@@ -150,7 +150,7 @@ function AnimatedCardsStack() {
                     </div>
 
                     {/* Question */}
-                    <div className="flex-1 flex items-center justify-center py-8">
+                    <div className="flex-1 flex items-center justify-center py-6 md:py-8">
                       <motion.div
                         animate={{
                           scale: isActive ? [1, 1.02, 1] : 1,
@@ -159,9 +159,9 @@ function AnimatedCardsStack() {
                           duration: 2,
                           repeat: Infinity,
                         }}
-                        className="text-center"
+                        className="text-center px-2"
                       >
-                        <div className="text-2xl font-bold text-white mb-4">
+                        <div className="text-lg md:text-2xl font-bold text-white mb-3 md:mb-4">
                           {card.question}
                         </div>
                         <motion.div
@@ -174,7 +174,7 @@ function AnimatedCardsStack() {
                             delay: isActive ? 1 : 0,
                             duration: 0.5,
                           }}
-                          className="text-white/70 text-lg overflow-hidden"
+                          className="text-white/70 text-sm md:text-lg overflow-hidden"
                         >
                           {card.answer}
                         </motion.div>
@@ -206,13 +206,13 @@ function AnimatedCardsStack() {
                             Qual foi a dificuldade desta pergunta?
                           </div>
                         </div>
-                        <div className="flex justify-center gap-2">
+                        <div className="flex justify-center gap-1.5 md:gap-2">
                           {[1, 2, 3, 4, 5].map((difficulty) => (
                             <motion.button
                               key={difficulty}
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
-                              className={`group relative w-14 h-14 rounded-xl transition-all flex items-center justify-center ${
+                              className={`group relative w-11 h-11 md:w-14 md:h-14 rounded-lg md:rounded-xl transition-all flex items-center justify-center ${
                                 difficulty === 1
                                   ? 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
                                   : difficulty === 2
@@ -224,7 +224,7 @@ function AnimatedCardsStack() {
                                   : 'bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'
                               } shadow-lg hover:shadow-xl`}
                             >
-                              <span className="text-white font-bold text-2xl">{difficulty}</span>
+                              <span className="text-white font-bold text-xl md:text-2xl">{difficulty}</span>
                               {/* Tooltip */}
                               <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 px-3 py-1 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
                                 {difficulty === 1
@@ -261,7 +261,7 @@ function AnimatedCardsStack() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.6 }}
-        className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 flex gap-3"
+        className="absolute -bottom-12 md:-bottom-16 left-1/2 transform -translate-x-1/2 flex gap-2 md:gap-3"
       >
         {cards.map((_, index) => (
           <motion.button
@@ -284,9 +284,9 @@ function AnimatedCardsStack() {
         whileHover={{ scale: 1.1, x: -5 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setActiveCard((prev) => (prev - 1 + cards.length) % cards.length)}
-        className="absolute left-0 top-1/2 -translate-y-1/2 p-4 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors"
+        className="absolute -left-2 md:left-0 top-1/2 -translate-y-1/2 p-3 md:p-4 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors z-10"
       >
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
       </motion.button>
@@ -297,9 +297,9 @@ function AnimatedCardsStack() {
         whileHover={{ scale: 1.1, x: 5 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setActiveCard((prev) => (prev + 1) % cards.length)}
-        className="absolute right-0 top-1/2 -translate-y-1/2 p-4 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors"
+        className="absolute -right-2 md:right-0 top-1/2 -translate-y-1/2 p-3 md:p-4 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors z-10"
       >
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
       </motion.button>
@@ -605,7 +605,7 @@ export default function Home() {
             </div>
 
             {/* Animated 3D Cards Stack */}
-            <div className="relative hidden lg:block h-[600px]">
+            <div className="relative h-[500px] md:h-[600px] mt-12 lg:mt-0">
               <AnimatedCardsStack />
             </div>
           </div>
